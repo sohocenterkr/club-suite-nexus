@@ -1,452 +1,379 @@
 
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Plus, Edit, Trash2, Key, Shower, Home, MoreHorizontal } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { toast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
-import AdminLayout from "@/components/AdminLayout";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
+import { MoreHorizontal, Edit, Trash2, Plus, Key, Droplet, Users, Package } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle
+  DialogTitle,
 } from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { toast } from "@/hooks/use-toast";
 
-interface Amenity {
-  id: string;
-  name: string;
-  type: 'locker' | 'shower' | 'meeting_room' | 'other';
-  price: number;
-  description?: string;
-  hasLockerNumber?: boolean;
-}
+// 타입별 아이콘 매핑
+const typeIcons: Record<string, React.ReactNode> = {
+  locker: <Key className="h-5 w-5" />,
+  shower: <Droplet className="h-5 w-5" />,
+  meeting_room: <Users className="h-5 w-5" />,
+  other: <Package className="h-5 w-5" />,
+};
+
+// 타입 옵션
+const typeOptions = [
+  { value: "locker", label: "락커" },
+  { value: "shower", label: "샤워실" },
+  { value: "meeting_room", label: "회의실" },
+  { value: "other", label: "기타" },
+];
+
+// 부대시설 목록 (실제로는 API에서 가져옴)
+const mockAmenities = [
+  {
+    id: "1",
+    facilityId: "facility-1",
+    name: "개인 락커",
+    price: 30000,
+    description: "회원 개인 물품 보관용 락커입니다. (월 기준)",
+    type: "locker",
+  },
+  {
+    id: "2", 
+    facilityId: "facility-1",
+    name: "VIP 샤워실",
+    price: 5000,
+    description: "일반 샤워실보다 넓고 쾌적한 VIP 샤워실입니다. (1회 사용권)",
+    type: "shower",
+  },
+  {
+    id: "3",
+    facilityId: "facility-1",
+    name: "소규모 회의실",
+    price: 10000,
+    description: "4인까지 사용 가능한 소규모 회의실입니다. (1시간)",
+    type: "meeting_room",
+  },
+  {
+    id: "4",
+    facilityId: "facility-1", 
+    name: "운동복 대여",
+    price: 3000,
+    description: "깨끗하게 세탁된 운동복을 대여해 드립니다. (1회)",
+    type: "other",
+  }
+];
 
 const AmenityManagement = () => {
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  
-  // 임시 데이터
-  const [amenities, setAmenities] = useState<Amenity[]>([
-    {
-      id: "1",
-      name: "락커 이용권",
-      type: "locker",
-      price: 30000,
-      description: "개인 락커 한 달 이용권입니다.",
-      hasLockerNumber: true
-    },
-    {
-      id: "2",
-      name: "샤워실 이용권",
-      type: "shower",
-      price: 5000,
-      description: "헬스장 회원이 아닌 분들을 위한 일일 샤워실 이용권입니다.",
-    },
-    {
-      id: "3",
-      name: "미팅룸 1시간",
-      type: "meeting_room",
-      price: 15000,
-      description: "최대 6인까지 이용 가능한 미팅룸 1시간 이용권입니다.",
-    }
-  ]);
-  
+  const [amenities, setAmenities] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [selectedAmenity, setSelectedAmenity] = useState<Amenity | null>(null);
-  const [editMode, setEditMode] = useState(false);
-  
-  // 새 부대시설 폼 상태
-  const [formData, setFormData] = useState<Omit<Amenity, 'id'>>({
+  const [selectedAmenity, setSelectedAmenity] = useState<any>(null);
+  const [formData, setFormData] = useState({
     name: "",
-    type: "other",
-    price: 0,
+    price: "",
     description: "",
-    hasLockerNumber: false
+    type: "other",
+  });
+  const [formErrors, setFormErrors] = useState({
+    name: false,
+    price: false,
+    type: false,
   });
 
-  // 만약 시설 관리자가 아니라면 대시보드로 리디렉션
-  if (user?.role !== "admin") {
-    navigate("/dashboard");
-    return null;
-  }
+  useEffect(() => {
+    // API 호출 대신 임시 데이터 로드
+    setTimeout(() => {
+      setAmenities(mockAmenities);
+      setIsLoading(false);
+    }, 500);
+  }, []);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    
-    if (name === "price") {
-      setFormData(prev => ({ ...prev, [name]: Number(value) }));
-    } else if (name === "hasLockerNumber") {
-      setFormData(prev => ({ ...prev, [name]: (e.target as HTMLInputElement).checked }));
-    } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
+  const handleInputChange = (field: string, value: string) => {
+    setFormData({
+      ...formData,
+      [field]: value,
+    });
+
+    if (field in formErrors && formErrors[field as keyof typeof formErrors]) {
+      setFormErrors({
+        ...formErrors,
+        [field]: false,
+      });
     }
   };
 
-  const handleTypeChange = (value: 'locker' | 'shower' | 'meeting_room' | 'other') => {
-    setFormData(prev => ({ 
-      ...prev, 
-      type: value,
-      hasLockerNumber: value === 'locker' ? true : false
-    }));
-  };
-
-  const handleAddClick = () => {
-    setEditMode(false);
+  const handleAdd = () => {
+    setSelectedAmenity(null);
     setFormData({
       name: "",
-      type: "other",
-      price: 0,
+      price: "",
       description: "",
-      hasLockerNumber: false
+      type: "other",
     });
     setIsDialogOpen(true);
   };
 
-  const handleEditClick = (amenity: Amenity) => {
-    setEditMode(true);
+  const handleEdit = (amenity: any) => {
     setSelectedAmenity(amenity);
     setFormData({
       name: amenity.name,
-      type: amenity.type,
-      price: amenity.price,
+      price: amenity.price.toString(),
       description: amenity.description || "",
-      hasLockerNumber: amenity.hasLockerNumber || false
+      type: amenity.type,
     });
     setIsDialogOpen(true);
   };
 
-  const handleDeleteClick = (amenity: Amenity) => {
+  const handleDelete = (amenity: any) => {
     setSelectedAmenity(amenity);
     setIsDeleteDialogOpen(true);
   };
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(price);
-  };
-
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case 'locker':
-        return <Key className="h-5 w-5" />;
-      case 'shower':
-        return <Shower className="h-5 w-5" />;
-      case 'meeting_room':
-        return <Home className="h-5 w-5" />;
-      default:
-        return <MoreHorizontal className="h-5 w-5" />;
-    }
-  };
-
-  const getTypeLabel = (type: string) => {
-    switch (type) {
-      case 'locker':
-        return '락커';
-      case 'shower':
-        return '샤워실';
-      case 'meeting_room':
-        return '미팅룸';
-      default:
-        return '기타';
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const validateForm = () => {
+    const errors = {
+      name: !formData.name.trim(),
+      price: !formData.price.trim() || isNaN(Number(formData.price)) || Number(formData.price) < 0,
+      type: !formData.type,
+    };
     
-    if (!formData.name || formData.price < 0) {
-      toast({
-        title: "입력 오류",
-        description: "모든 필수 항목을 올바르게 입력해주세요.",
-        variant: "destructive"
-      });
+    setFormErrors(errors);
+    return !Object.values(errors).some(Boolean);
+  };
+
+  const handleSave = () => {
+    if (!validateForm()) {
       return;
     }
-    
-    try {
-      setIsLoading(true);
-      
-      // 실제 구현에서는 API 호출로 대체
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      if (editMode && selectedAmenity) {
-        // 부대시설 수정
-        setAmenities(prev => 
-          prev.map(item => 
-            item.id === selectedAmenity.id 
-              ? { ...item, ...formData } 
-              : item
-          )
-        );
-        toast({
-          title: "부대시설 수정 완료",
-          description: "부대시설 정보가 성공적으로 수정되었습니다."
-        });
-      } else {
-        // 새 부대시설 추가
-        const newAmenity: Amenity = {
-          id: `${Date.now()}`,
-          ...formData
-        };
-        setAmenities(prev => [...prev, newAmenity]);
-        toast({
-          title: "부대시설 추가 완료",
-          description: "새로운 부대시설이 추가되었습니다."
-        });
-      }
-      
-      setIsDialogOpen(false);
-    } catch (error) {
+
+    const updatedAmenity = {
+      id: selectedAmenity?.id || `new-${Date.now()}`,
+      facilityId: "facility-1", // 실제로는 현재 시설 ID
+      name: formData.name,
+      price: Number(formData.price),
+      description: formData.description,
+      type: formData.type,
+    };
+
+    if (selectedAmenity) {
+      // 기존 부대시설 수정
+      setAmenities(amenities.map(item => 
+        item.id === selectedAmenity.id ? updatedAmenity : item
+      ));
       toast({
-        title: "처리 실패",
-        description: editMode ? "부대시설 수정 중 오류가 발생했습니다." : "부대시설 추가 중 오류가 발생했습니다.",
-        variant: "destructive"
+        title: "부대시설 수정 완료",
+        description: `'${formData.name}' 부대시설이 수정되었습니다.`,
       });
-    } finally {
-      setIsLoading(false);
+    } else {
+      // 새 부대시설 추가
+      setAmenities([...amenities, updatedAmenity]);
+      toast({
+        title: "부대시설 추가 완료",
+        description: `'${formData.name}' 부대시설이 추가되었습니다.`,
+      });
     }
+
+    setIsDialogOpen(false);
   };
 
-  const handleDelete = async () => {
-    if (!selectedAmenity) return;
-    
-    try {
-      setIsLoading(true);
-      
-      // 실제 구현에서는 API 호출로 대체
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      setAmenities(prev => prev.filter(item => item.id !== selectedAmenity.id));
+  const handleDeleteConfirm = () => {
+    if (selectedAmenity) {
+      setAmenities(amenities.filter(item => item.id !== selectedAmenity.id));
       toast({
         title: "부대시설 삭제 완료",
-        description: "부대시설이 성공적으로 삭제되었습니다."
+        description: `'${selectedAmenity.name}' 부대시설이 삭제되었습니다.`,
       });
-      
-      setIsDeleteDialogOpen(false);
-    } catch (error) {
-      toast({
-        title: "삭제 실패",
-        description: "부대시설 삭제 중 오류가 발생했습니다.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
     }
+    setIsDeleteDialogOpen(false);
   };
 
   return (
-    <AdminLayout activeTab="amenities">
-      <div className="container mx-auto py-6 px-4">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">부대시설 관리</h1>
-          <Button onClick={handleAddClick}>
-            <Plus className="h-4 w-4 mr-2" />
-            부대시설 추가
-          </Button>
-        </div>
-        
+    <div className="container mx-auto py-10 px-4">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">부대시설 관리</h1>
+        <Button onClick={handleAdd}>
+          <Plus className="mr-2 h-4 w-4" /> 부대시설 추가
+        </Button>
+      </div>
+
+      {isLoading ? (
+        <div className="text-center py-10">로딩 중...</div>
+      ) : amenities.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-10">
+            <p className="text-muted-foreground mb-4">등록된 부대시설이 없습니다.</p>
+            <Button onClick={handleAdd}>
+              <Plus className="mr-2 h-4 w-4" /> 부대시설 추가
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {amenities.map(amenity => (
-            <Card key={amenity.id}>
-              <CardHeader className="pb-3">
-                <div className="flex justify-between items-start">
-                  <CardTitle className="flex items-center gap-2">
-                    <div className="bg-primary/10 p-2 rounded-full">
-                      {getTypeIcon(amenity.type)}
-                    </div>
-                    {amenity.name}
-                  </CardTitle>
-                  <div className="flex space-x-1">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={() => handleEditClick(amenity)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="text-destructive" 
-                      onClick={() => handleDeleteClick(amenity)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+            <Card key={amenity.id} className="h-full overflow-hidden">
+              <CardHeader className="flex flex-row items-start justify-between pb-2">
+                <div>
+                  <CardTitle className="text-xl">{amenity.name}</CardTitle>
+                  <CardDescription>{typeOptions.find(t => t.value === amenity.type)?.label}</CardDescription>
                 </div>
-                <CardDescription>
-                  {getTypeLabel(amenity.type)}
-                </CardDescription>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="h-8 w-8 p-0">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>관리</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => handleEdit(amenity)}>
+                      <Edit className="mr-2 h-4 w-4" /> 수정
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      className="text-red-600 focus:text-red-600" 
+                      onClick={() => handleDelete(amenity)}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" /> 삭제
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-2xl font-bold">
-                      {formatPrice(amenity.price)}
-                    </p>
+                <div className="mb-2">
+                  <div className="inline-flex items-center justify-center p-2 bg-primary/10 rounded-lg mb-3">
+                    {typeIcons[amenity.type] || typeIcons.other}
                   </div>
-                  {amenity.description && (
-                    <p className="text-sm text-muted-foreground">
-                      {amenity.description}
-                    </p>
-                  )}
-                  {amenity.hasLockerNumber && (
-                    <div className="bg-primary/5 p-2 rounded-md text-sm">
-                      <p className="font-medium">락커 번호 입력 필요</p>
-                    </div>
-                  )}
+                  <div className="flex justify-between items-baseline mb-1">
+                    <span className="text-2xl font-bold">{amenity.price.toLocaleString()}원</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{amenity.description}</p>
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
-      </div>
-      
+      )}
+
       {/* 부대시설 추가/수정 다이얼로그 */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>
-              {editMode ? "부대시설 수정" : "새 부대시설 추가"}
-            </DialogTitle>
+            <DialogTitle>{selectedAmenity ? '부대시설 수정' : '부대시설 추가'}</DialogTitle>
             <DialogDescription>
-              {editMode ? "부대시설 정보를 수정합니다." : "새로운 부대시설을 추가합니다."}
+              부대시설의 정보를 입력해주세요. 모든 회원들에게 표시됩니다.
             </DialogDescription>
           </DialogHeader>
-          
-          <form onSubmit={handleSubmit} className="space-y-4 py-4">
-            <div className="space-y-2">
-              <label htmlFor="name" className="text-sm font-medium">
-                부대시설 이름
-              </label>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="name">이름 *</Label>
               <Input
                 id="name"
-                name="name"
                 value={formData.name}
-                onChange={handleChange}
-                placeholder="예: 락커 이용권"
-                required
+                onChange={(e) => handleInputChange("name", e.target.value)}
+                error={formErrors.name}
               />
+              {formErrors.name && (
+                <p className="text-sm text-red-500">이름을 입력해주세요.</p>
+              )}
             </div>
-            
-            <div className="space-y-2">
-              <label htmlFor="type" className="text-sm font-medium">
-                유형
-              </label>
+            <div className="grid gap-2">
+              <Label htmlFor="price">가격 (원) *</Label>
+              <Input
+                id="price"
+                type="number"
+                value={formData.price}
+                onChange={(e) => handleInputChange("price", e.target.value)}
+                error={formErrors.price}
+              />
+              {formErrors.price && (
+                <p className="text-sm text-red-500">유효한 가격을 입력해주세요.</p>
+              )}
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="type">유형 *</Label>
               <Select
                 value={formData.type}
-                onValueChange={(value: any) => handleTypeChange(value)}
+                onValueChange={(value) => handleInputChange("type", value)}
               >
-                <SelectTrigger>
+                <SelectTrigger id="type">
                   <SelectValue placeholder="유형 선택" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="locker">락커</SelectItem>
-                  <SelectItem value="shower">샤워실</SelectItem>
-                  <SelectItem value="meeting_room">미팅룸</SelectItem>
-                  <SelectItem value="other">기타</SelectItem>
+                  <SelectGroup>
+                    <SelectLabel>부대시설 유형</SelectLabel>
+                    {typeOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
                 </SelectContent>
               </Select>
+              {formErrors.type && (
+                <p className="text-sm text-red-500">유형을 선택해주세요.</p>
+              )}
             </div>
-            
-            <div className="space-y-2">
-              <label htmlFor="price" className="text-sm font-medium">
-                가격 (원)
-              </label>
-              <Input
-                id="price"
-                name="price"
-                type="number"
-                min="0"
-                step="1000"
-                value={formData.price}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            {formData.type === 'locker' && (
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="hasLockerNumber"
-                  name="hasLockerNumber"
-                  checked={formData.hasLockerNumber}
-                  onChange={handleChange}
-                  className="rounded border-gray-300 text-primary focus:ring-primary"
-                />
-                <label htmlFor="hasLockerNumber" className="text-sm font-medium">
-                  락커 번호 입력 필요
-                </label>
-              </div>
-            )}
-            
-            <div className="space-y-2">
-              <label htmlFor="description" className="text-sm font-medium">
-                설명 (선택사항)
-              </label>
+            <div className="grid gap-2">
+              <Label htmlFor="description">설명</Label>
               <Textarea
                 id="description"
-                name="description"
                 value={formData.description}
-                onChange={handleChange}
-                placeholder="부대시설에 대한 추가 설명"
+                onChange={(e) => handleInputChange("description", e.target.value)}
+                placeholder="부가 설명을 입력하세요."
                 rows={3}
               />
             </div>
-            
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                취소
-              </Button>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? "처리 중..." : editMode ? "수정하기" : "추가하기"}
-              </Button>
-            </DialogFooter>
-          </form>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+              취소
+            </Button>
+            <Button onClick={handleSave}>저장</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
-      
+
       {/* 삭제 확인 다이얼로그 */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>부대시설 삭제</DialogTitle>
             <DialogDescription>
-              정말로 '{selectedAmenity?.name}' 부대시설을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
+              정말 이 부대시설을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
             </DialogDescription>
           </DialogHeader>
-          
-          <DialogFooter className="mt-4">
-            <Button type="button" variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
               취소
             </Button>
-            <Button 
-              type="button" 
-              variant="destructive" 
-              onClick={handleDelete}
-              disabled={isLoading}
-            >
-              {isLoading ? "삭제 중..." : "삭제"}
+            <Button variant="destructive" onClick={handleDeleteConfirm}>
+              삭제
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </AdminLayout>
+    </div>
   );
 };
 

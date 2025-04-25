@@ -1,427 +1,566 @@
 
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { 
+  Building, 
+  Settings, 
+  User,
+  Calendar, 
+  CreditCard, 
+  DollarSign, 
+  Clock, 
+  CheckSquare,
+  ChevronRight
+} from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
-import { Calendar, CalendarCheck, CreditCard, Key } from "lucide-react";
-import { format, addDays, isBefore, differenceInDays } from "date-fns";
-import { ko } from "date-fns/locale";
-import AdminLayout from "@/components/AdminLayout";
 
-// 임시 데이터 인터페이스
-interface ActiveMembership {
-  id: string;
-  facilityId: string;
-  facilityName: string;
-  membershipName: string;
-  startDate: string;
-  endDate: string;
-}
+// Mock data for demonstration
+const mockSubscriptions = [
+  {
+    id: "subscription-1",
+    membershipName: "3개월 정기권",
+    facilityName: "헬스플러스 피트니스",
+    price: 270000,
+    startDate: "2025-03-01",
+    endDate: "2025-06-01",
+    isActive: true,
+    facilityId: "facility-1",
+  },
+];
 
-interface ActiveAmenity {
-  id: string;
-  facilityId: string;
-  facilityName: string;
-  amenityName: string;
-  type: string;
-  startDate: string;
-  endDate: string | null;
-  lockerNumber?: string;
-}
+const mockAmenityUsage = [
+  {
+    id: "amenity-1",
+    amenityName: "개인 락커",
+    facilityName: "헬스플러스 피트니스",
+    price: 30000,
+    startDate: "2025-03-01",
+    endDate: "2025-04-01",
+    isActive: true,
+    facilityId: "facility-1",
+    lockerNumber: "A-123",
+  },
+];
+
+const mockPayments = [
+  {
+    id: "payment-1",
+    facilityName: "헬스플러스 피트니스",
+    itemName: "3개월 정기권",
+    amount: 270000,
+    date: "2025-03-01",
+    status: "completed",
+  },
+  {
+    id: "payment-2",
+    facilityName: "헬스플러스 피트니스",
+    itemName: "개인 락커",
+    amount: 30000,
+    date: "2025-03-01",
+    status: "completed",
+  },
+];
 
 const Dashboard = () => {
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  
-  // 임시 데이터
-  const [activeMemberships, setActiveMemberships] = useState<ActiveMembership[]>([
-    {
-      id: "membership-1",
-      facilityId: "facility-1",
-      facilityName: "헬스플러스 피트니스",
-      membershipName: "3개월 정기권",
-      startDate: "2025-03-01",
-      endDate: "2025-06-01"
-    }
-  ]);
-  
-  const [activeAmenities, setActiveAmenities] = useState<ActiveAmenity[]>([
-    {
-      id: "amenity-1",
-      facilityId: "facility-1",
-      facilityName: "헬스플러스 피트니스",
-      amenityName: "락커 이용권",
-      type: "locker",
-      startDate: "2025-03-01",
-      endDate: "2025-06-01",
-      lockerNumber: "A-123"
-    }
-  ]);
-
-  const [isLockerDialogOpen, setIsLockerDialogOpen] = useState(false);
-  const [selectedAmenity, setSelectedAmenity] = useState<ActiveAmenity | null>(null);
+  const [activeTab, setActiveTab] = useState("overview");
+  const [subscriptions, setSubscriptions] = useState<any[]>([]);
+  const [amenityUsage, setAmenityUsage] = useState<any[]>([]);
+  const [payments, setPayments] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [openLockerDialog, setOpenLockerDialog] = useState(false);
+  const [selectedLocker, setSelectedLocker] = useState<any>(null);
   const [lockerNumber, setLockerNumber] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  
-  const isExpirationClose = (endDate: string) => {
-    const today = new Date();
-    const expirationDate = new Date(endDate);
-    const daysRemaining = differenceInDays(expirationDate, today);
-    return daysRemaining <= 7 && daysRemaining >= 0;
-  };
 
-  const formatDate = (dateString: string) => {
-    return format(new Date(dateString), "yyyy년 M월 d일 (eee)", { locale: ko });
-  };
-
-  const handleExtendMembership = (membershipId: string) => {
-    navigate(`/checkout/membership/${membershipId}`);
-  };
-
-  const handleEditLockerNumber = (amenity: ActiveAmenity) => {
-    setSelectedAmenity(amenity);
-    setLockerNumber(amenity.lockerNumber || "");
-    setIsLockerDialogOpen(true);
-  };
-
-  const handleSaveLockerNumber = async () => {
-    if (!selectedAmenity) return;
-    
-    try {
-      setIsLoading(true);
-      
-      // 실제 구현에서는 API 호출로 대체
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // 락커 번호 업데이트
-      setActiveAmenities(prev => 
-        prev.map(item => 
-          item.id === selectedAmenity.id 
-            ? { ...item, lockerNumber } 
-            : item
-        )
-      );
-      
-      toast({
-        title: "락커 번호 변경 완료",
-        description: "락커 번호가 성공적으로 변경되었습니다."
-      });
-      
-      setIsLockerDialogOpen(false);
-    } catch (error) {
-      toast({
-        title: "변경 실패",
-        description: "락커 번호 변경 중 오류가 발생했습니다.",
-        variant: "destructive"
-      });
-    } finally {
+  useEffect(() => {
+    // API 호출을 시뮬레이션
+    setTimeout(() => {
+      setSubscriptions(mockSubscriptions);
+      setAmenityUsage(mockAmenityUsage);
+      setPayments(mockPayments);
       setIsLoading(false);
-    }
+    }, 500);
+  }, []);
+
+  // 날짜 포맷 함수
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
   };
 
-  // 관리자인 경우 관리자 대시보드 렌더링
-  if (user?.role === "admin") {
+  // 락커 번호 변경 함수
+  const handleLockerNumberChange = (amenityUsage: any) => {
+    setSelectedLocker(amenityUsage);
+    setLockerNumber(amenityUsage.lockerNumber || "");
+    setOpenLockerDialog(true);
+  };
+
+  // 락커 번호 저장 함수
+  const handleSaveLockerNumber = () => {
+    if (!lockerNumber.trim()) {
+      toast({
+        title: "입력 오류",
+        description: "락커 번호를 입력해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // 실제로는 API 호출로 서버에 저장
+    setAmenityUsage(
+      amenityUsage.map((item) =>
+        item.id === selectedLocker.id ? { ...item, lockerNumber } : item
+      )
+    );
+
+    toast({
+      title: "락커 번호 변경 완료",
+      description: "락커 번호가 성공적으로 변경되었습니다.",
+    });
+
+    setOpenLockerDialog(false);
+  };
+
+  if (isLoading) {
     return (
-      <AdminLayout activeTab="dashboard">
-        <div className="container mx-auto py-6 px-4">
-          <h1 className="text-2xl font-bold mb-6">관리자 대시보드</h1>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">총 회원 수</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">45명</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">활성 정기권</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">38명</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">이번달 매출</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">4,350,000원</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">방문자 수</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">오늘 12명</div>
-                <p className="text-xs text-muted-foreground mt-1">이번주 총 89명</p>
-              </CardContent>
-            </Card>
-          </div>
-          
-          <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle>최근 활동</CardTitle>
-                <CardDescription>지난 7일간의 활동 내역입니다.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-3 bg-background rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="bg-primary/10 p-2 rounded-full">
-                        <CreditCard className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-medium">김철수님 3개월 정기권 구매</p>
-                        <p className="text-sm text-muted-foreground">2025년 4월 24일 14:23</p>
-                      </div>
-                    </div>
-                    <span className="text-green-600 font-medium">270,000원</span>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-background rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="bg-primary/10 p-2 rounded-full">
-                        <Key className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-medium">박지민님 락커 이용권 구매</p>
-                        <p className="text-sm text-muted-foreground">2025년 4월 23일 11:15</p>
-                      </div>
-                    </div>
-                    <span className="text-green-600 font-medium">30,000원</span>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-background rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="bg-primary/10 p-2 rounded-full">
-                        <CalendarCheck className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-medium">이영희님 입장</p>
-                        <p className="text-sm text-muted-foreground">2025년 4월 22일 18:30</p>
-                      </div>
-                    </div>
-                    <span className="text-gray-500 text-sm">유효 회원</span>
-                  </div>
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button variant="outline" className="w-full">모든 활동 보기</Button>
-              </CardFooter>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle>빠른 링크</CardTitle>
-                <CardDescription>자주 사용하는 기능에 빠르게 접근하세요.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Button
-                  variant="outline"
-                  className="w-full justify-start bg-background"
-                  onClick={() => navigate("/settings/facility")}
-                >
-                  <Building className="mr-2 h-4 w-4" />
-                  시설 정보 관리
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start bg-background"
-                  onClick={() => navigate("/settings/memberships")}
-                >
-                  <Calendar className="mr-2 h-4 w-4" />
-                  정기권 관리
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start bg-background"
-                  onClick={() => navigate("/settings/amenities")}
-                >
-                  <Settings className="mr-2 h-4 w-4" />
-                  부대시설 관리
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start bg-background"
-                  onClick={() => navigate("/check-in")}
-                >
-                  <User className="mr-2 h-4 w-4" />
-                  입장 확인
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </AdminLayout>
+      <div className="container mx-auto py-10 px-4 flex items-center justify-center min-h-[60vh]">
+        <div>로딩 중...</div>
+      </div>
     );
   }
 
-  // 일반 회원 대시보드
+  const hasActiveSubscription = subscriptions.some((sub) => sub.isActive);
+  const hasActiveAmenity = amenityUsage.some((usage) => usage.isActive);
+
   return (
-    <div className="container mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold mb-8">내 이용권</h1>
+    <div className="container mx-auto py-10 px-4">
+      <h1 className="text-2xl font-bold mb-6">내 대시보드</h1>
       
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-primary" />
-            정기권
-          </h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {activeMemberships.length > 0 ? (
-              activeMemberships.map(membership => (
-                <Card key={membership.id} className="relative">
-                  {isExpirationClose(membership.endDate) && (
-                    <div className="absolute top-0 right-0 bg-orange-500 text-white text-xs px-2 py-1 rounded-bl-md rounded-tr-md">
-                      곧 만료
-                    </div>
-                  )}
-                  <CardHeader>
-                    <CardTitle>{membership.facilityName}</CardTitle>
-                    <CardDescription>{membership.membershipName}</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">시작일:</span>
-                      <span className="text-sm">{formatDate(membership.startDate)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">만료일:</span>
-                      <span className="text-sm font-medium">{formatDate(membership.endDate)}</span>
-                    </div>
-                    
-                    {isExpirationClose(membership.endDate) && (
-                      <div className="mt-3 pt-3 border-t">
-                        <p className="text-sm text-orange-600 mb-2">
-                          정기권이 {differenceInDays(new Date(membership.endDate), new Date())}일 후 만료됩니다.
-                        </p>
-                        <Button 
-                          className="w-full"
-                          onClick={() => handleExtendMembership(membership.id)}
-                        >
-                          정기권 연장하기
-                        </Button>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ))
-            ) : (
-              <div className="col-span-full bg-muted/30 rounded-lg p-8 text-center">
-                <p className="text-muted-foreground mb-4">활성화된 정기권이 없습니다.</p>
-                <Button onClick={() => navigate("/facilities")}>
-                  정기권 구매하기
-                </Button>
-              </div>
-            )}
+      <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="overview">
+            <Building className="mr-2 h-4 w-4" /> 요약
+          </TabsTrigger>
+          <TabsTrigger value="memberships">
+            <Calendar className="mr-2 h-4 w-4" /> 내 정기권
+          </TabsTrigger>
+          <TabsTrigger value="amenities">
+            <Settings className="mr-2 h-4 w-4" /> 부대시설
+          </TabsTrigger>
+          <TabsTrigger value="payments">
+            <CreditCard className="mr-2 h-4 w-4" /> 결제 내역
+          </TabsTrigger>
+          <TabsTrigger value="profile">
+            <User className="mr-2 h-4 w-4" /> 내 정보
+          </TabsTrigger>
+        </TabsList>
+
+        {/* 요약 탭 */}
+        <TabsContent value="overview" className="space-y-6">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">활성 정기권</CardTitle>
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{subscriptions.filter((sub) => sub.isActive).length}개</div>
+                <p className="text-xs text-muted-foreground">총 정기권 {subscriptions.length}개</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">부대시설 이용권</CardTitle>
+                <Settings className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{amenityUsage.filter((usage) => usage.isActive).length}개</div>
+                <p className="text-xs text-muted-foreground">총 이용권 {amenityUsage.length}개</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">총 결제 금액</CardTitle>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {payments.reduce((sum, payment) => sum + payment.amount, 0).toLocaleString()}원
+                </div>
+                <p className="text-xs text-muted-foreground">총 {payments.length}건의 결제</p>
+              </CardContent>
+            </Card>
           </div>
-        </div>
-        
-        <div>
-          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <Key className="h-5 w-5 text-primary" />
-            부대시설 이용권
-          </h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {activeAmenities.length > 0 ? (
-              activeAmenities.map(amenity => (
-                <Card key={amenity.id}>
+
+          {hasActiveSubscription || hasActiveAmenity ? (
+            <div className="grid gap-4 md:grid-cols-2">
+              {hasActiveSubscription && (
+                <Card className="md:col-span-1">
                   <CardHeader>
-                    <CardTitle>{amenity.facilityName}</CardTitle>
-                    <CardDescription>{amenity.amenityName}</CardDescription>
+                    <CardTitle>활성 정기권</CardTitle>
+                    <CardDescription>현재 이용 중인 시설 회원권</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">시작일:</span>
-                      <span className="text-sm">{formatDate(amenity.startDate)}</span>
-                    </div>
-                    {amenity.endDate && (
-                      <div className="flex justify-between">
-                        <span className="text-sm text-muted-foreground">만료일:</span>
-                        <span className="text-sm">{formatDate(amenity.endDate)}</span>
-                      </div>
-                    )}
-                    
-                    {amenity.type === "locker" && (
-                      <div className="mt-3 pt-3 border-t">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium">락커 번호:</span>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm bg-primary/10 px-2 py-1 rounded">
-                              {amenity.lockerNumber || "미지정"}
-                            </span>
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              onClick={() => handleEditLockerNumber(amenity)}
-                            >
-                              변경
-                            </Button>
+                    {subscriptions
+                      .filter((sub) => sub.isActive)
+                      .map((subscription) => (
+                        <div key={subscription.id} className="flex items-center justify-between p-3 rounded-lg border">
+                          <div>
+                            <h3 className="font-medium">{subscription.facilityName}</h3>
+                            <p className="text-sm text-muted-foreground">{subscription.membershipName}</p>
+                            <p className="text-xs mt-1">
+                              {formatDate(subscription.startDate)} ~ {formatDate(subscription.endDate)}
+                            </p>
+                          </div>
+                          <div className="flex items-center">
+                            <div className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-medium">
+                              활성
+                            </div>
+                            <ChevronRight className="h-4 w-4 ml-2 text-muted-foreground" />
                           </div>
                         </div>
-                      </div>
-                    )}
+                      ))}
                   </CardContent>
                 </Card>
-              ))
-            ) : (
-              <div className="col-span-full bg-muted/30 rounded-lg p-8 text-center">
-                <p className="text-muted-foreground mb-4">활성화된 부대시설 이용권이 없습니다.</p>
-                <Button onClick={() => navigate("/facilities")}>
-                  이용권 구매하기
-                </Button>
+              )}
+
+              {hasActiveAmenity && (
+                <Card className="md:col-span-1">
+                  <CardHeader>
+                    <CardTitle>부대시설 이용권</CardTitle>
+                    <CardDescription>현재 이용 중인 부대시설</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {amenityUsage
+                      .filter((usage) => usage.isActive)
+                      .map((usage) => (
+                        <div key={usage.id} className="flex items-center justify-between p-3 rounded-lg border">
+                          <div>
+                            <h3 className="font-medium">{usage.facilityName}</h3>
+                            <p className="text-sm text-muted-foreground">{usage.amenityName}</p>
+                            {usage.amenityName.includes("락커") && (
+                              <p className="text-xs font-medium mt-1">락커 번호: {usage.lockerNumber || "-"}</p>
+                            )}
+                          </div>
+                          <div className="flex items-center">
+                            {usage.amenityName.includes("락커") && (
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={() => handleLockerNumberChange(usage)}
+                              >
+                                번호 변경
+                              </Button>
+                            )}
+                            <ChevronRight className="h-4 w-4 ml-2 text-muted-foreground" />
+                          </div>
+                        </div>
+                      ))}
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-10">
+                <div className="rounded-full bg-primary/10 p-3 mb-4">
+                  <CheckSquare className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="text-lg font-medium mb-2">시설 회원권이 없습니다</h3>
+                <p className="text-muted-foreground text-center mb-4">
+                  아직 시설 회원권을 구매하지 않았습니다. 시설을 이용하시려면 회원권을 구매해주세요.
+                </p>
+                <Button>시설 둘러보기</Button>
+              </CardContent>
+            </Card>
+          )}
+
+          <Card>
+            <CardHeader>
+              <CardTitle>최근 결제 내역</CardTitle>
+              <CardDescription>최근 결제 기록을 확인하세요</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {payments.slice(0, 3).map((payment) => (
+                  <div
+                    key={payment.id}
+                    className="flex items-center justify-between p-3 rounded-lg border"
+                  >
+                    <div>
+                      <h3 className="font-medium">{payment.facilityName}</h3>
+                      <p className="text-sm text-muted-foreground">{payment.itemName}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold">{payment.amount.toLocaleString()}원</p>
+                      <p className="text-xs text-muted-foreground">{formatDate(payment.date)}</p>
+                    </div>
+                  </div>
+                ))}
+
+                {payments.length === 0 && (
+                  <div className="text-center py-4 text-muted-foreground">
+                    결제 내역이 없습니다.
+                  </div>
+                )}
               </div>
+            </CardContent>
+            {payments.length > 3 && (
+              <CardFooter>
+                <Button variant="outline" className="w-full" onClick={() => setActiveTab("payments")}>
+                  모든 결제 내역 보기
+                </Button>
+              </CardFooter>
             )}
-          </div>
-        </div>
-      </div>
+          </Card>
+        </TabsContent>
+
+        {/* 내 정기권 탭 */}
+        <TabsContent value="memberships">
+          <Card>
+            <CardHeader>
+              <CardTitle>내 정기권 목록</CardTitle>
+              <CardDescription>가입한 시설의 정기권 정보</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {subscriptions.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground mb-4">가입한 정기권이 없습니다.</p>
+                  <Button>시설 둘러보기</Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {subscriptions.map((subscription) => (
+                    <div
+                      key={subscription.id}
+                      className="border rounded-lg p-4 space-y-3"
+                    >
+                      <div className="flex justify-between">
+                        <div>
+                          <h3 className="font-bold text-lg">{subscription.facilityName}</h3>
+                          <p className="text-muted-foreground">{subscription.membershipName}</p>
+                        </div>
+                        <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            subscription.isActive
+                              ? "bg-green-100 text-green-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
+                          {subscription.isActive ? "활성" : "비활성"}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <p className="text-muted-foreground">시작일</p>
+                          <p>{formatDate(subscription.startDate)}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">종료일</p>
+                          <p>{formatDate(subscription.endDate)}</p>
+                        </div>
+                      </div>
+
+                      <div className="pt-2 text-right">
+                        <span className="font-bold">
+                          {subscription.price.toLocaleString()}원
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* 부대시설 탭 */}
+        <TabsContent value="amenities">
+          <Card>
+            <CardHeader>
+              <CardTitle>이용 중인 부대시설</CardTitle>
+              <CardDescription>현재 이용 중인 부대시설 정보</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {amenityUsage.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground mb-4">이용 중인 부대시설이 없습니다.</p>
+                  <Button>부대시설 이용하기</Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {amenityUsage.map((usage) => (
+                    <div
+                      key={usage.id}
+                      className="border rounded-lg p-4 space-y-3"
+                    >
+                      <div className="flex justify-between">
+                        <div>
+                          <h3 className="font-bold text-lg">{usage.facilityName}</h3>
+                          <p className="text-muted-foreground">{usage.amenityName}</p>
+                        </div>
+                        <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            usage.isActive
+                              ? "bg-green-100 text-green-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
+                          {usage.isActive ? "활성" : "비활성"}
+                        </div>
+                      </div>
+
+                      {usage.amenityName.includes("락커") && (
+                        <div className="bg-gray-50 p-3 rounded-md flex justify-between items-center">
+                          <div>
+                            <p className="text-sm font-medium">락커 번호</p>
+                            <p className="text-lg">{usage.lockerNumber || "-"}</p>
+                          </div>
+                          {usage.isActive && (
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => handleLockerNumberChange(usage)}
+                            >
+                              번호 변경
+                            </Button>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <p className="text-muted-foreground">시작일</p>
+                          <p>{formatDate(usage.startDate)}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">종료일</p>
+                          <p>{usage.endDate ? formatDate(usage.endDate) : "무기한"}</p>
+                        </div>
+                      </div>
+
+                      <div className="pt-2 text-right">
+                        <span className="font-bold">
+                          {usage.price.toLocaleString()}원
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* 결제 내역 탭 */}
+        <TabsContent value="payments">
+          <Card>
+            <CardHeader>
+              <CardTitle>결제 내역</CardTitle>
+              <CardDescription>모든 결제 기록을 확인하세요</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {payments.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">결제 내역이 없습니다.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {payments.map((payment) => (
+                    <div
+                      key={payment.id}
+                      className="flex items-center justify-between p-3 rounded-lg border"
+                    >
+                      <div>
+                        <h3 className="font-medium">{payment.facilityName}</h3>
+                        <p className="text-sm text-muted-foreground">{payment.itemName}</p>
+                        <p className="text-xs text-muted-foreground">{formatDate(payment.date)}</p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          payment.status === "completed" 
+                            ? "bg-green-100 text-green-800"
+                            : "bg-yellow-100 text-yellow-800"
+                        }`}>
+                          {payment.status === "completed" ? "완료" : "처리 중"}
+                        </div>
+                        <p className="font-bold text-right">
+                          {payment.amount.toLocaleString()}원
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* 내 정보 탭 */}
+        <TabsContent value="profile">
+          <Card>
+            <CardHeader>
+              <CardTitle>내 정보</CardTitle>
+              <CardDescription>회원 정보를 확인하고 관리하세요</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">이름</label>
+                <div className="flex items-center gap-4">
+                  <Input value="홍길동" readOnly className="max-w-xs" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">전화번호</label>
+                <div className="flex items-center gap-4">
+                  <Input value="010-1234-5678" readOnly className="max-w-xs" />
+                </div>
+              </div>
+              <div>
+                <Button>정보 수정</Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* 락커 번호 변경 다이얼로그 */}
-      {selectedAmenity && (
-        <Dialog open={isLockerDialogOpen} onOpenChange={setIsLockerDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>락커 번호 변경</DialogTitle>
-              <DialogDescription>
-                사용하실 락커 번호를 입력해주세요.
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="py-4 space-y-4">
-              <div className="space-y-2">
-                <label htmlFor="lockerNumber" className="text-sm font-medium">
-                  락커 번호
-                </label>
-                <Input
-                  id="lockerNumber"
-                  value={lockerNumber}
-                  onChange={(e) => setLockerNumber(e.target.value)}
-                  placeholder="예: A-123"
-                />
-              </div>
-              
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsLockerDialogOpen(false)}>
-                  취소
-                </Button>
-                <Button 
-                  onClick={handleSaveLockerNumber}
-                  disabled={isLoading}
-                >
-                  {isLoading ? "저장 중..." : "저장"}
-                </Button>
-              </DialogFooter>
+      <Dialog open={openLockerDialog} onOpenChange={setOpenLockerDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>락커 번호 변경</DialogTitle>
+            <DialogDescription>
+              사용할 락커 번호를 입력해주세요.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <label htmlFor="locker-number">락커 번호</label>
+              <Input
+                id="locker-number"
+                value={lockerNumber}
+                onChange={(e) => setLockerNumber(e.target.value)}
+                placeholder="예: A-123"
+              />
             </div>
-          </DialogContent>
-        </Dialog>
-      )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpenLockerDialog(false)}>
+              취소
+            </Button>
+            <Button onClick={handleSaveLockerNumber}>저장</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
