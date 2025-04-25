@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,20 @@ const FacilitySettings = () => {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
+  // 시설 정보 변경사항 저장 (로컬 스토리지)
+  useEffect(() => {
+    const savedData = localStorage.getItem('facilityData');
+    const savedLogo = localStorage.getItem('facilityLogo');
+    
+    if (savedData) {
+      setFacilityData(JSON.parse(savedData));
+    }
+    
+    if (savedLogo) {
+      setLogoPreview(savedLogo);
+    }
+  }, []);
+
   // 만약 시설 관리자가 아니라면 대시보드로 리디렉션
   if (user?.role !== "admin") {
     navigate("/dashboard");
@@ -47,7 +61,9 @@ const FacilitySettings = () => {
       // 이미지 미리보기
       const reader = new FileReader();
       reader.onloadend = () => {
-        setLogoPreview(reader.result as string);
+        const result = reader.result as string;
+        setLogoPreview(result);
+        localStorage.setItem('facilityLogo', result);
       };
       reader.readAsDataURL(file);
     }
@@ -59,7 +75,9 @@ const FacilitySettings = () => {
     try {
       setIsLoading(true);
       
-      // 실제 구현에서는 API 호출로 대체
+      // 로컬 스토리지에 데이터 저장 (실제 구현에서는 API 호출로 대체)
+      localStorage.setItem('facilityData', JSON.stringify(facilityData));
+      
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       toast({
@@ -75,6 +93,23 @@ const FacilitySettings = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const applyTheme = () => {
+    localStorage.setItem('facilityData', JSON.stringify(facilityData));
+    toast({
+      title: "색상 테마 적용됨",
+      description: "선택한 색상 테마가 적용되었습니다."
+    });
+  };
+
+  const handlePreview = () => {
+    // 현재 상태를 로컬 스토리지에 저장하고 미리보기 페이지로 이동
+    localStorage.setItem('facilityData', JSON.stringify(facilityData));
+    if (logoPreview) {
+      localStorage.setItem('facilityLogo', logoPreview);
+    }
+    window.open(`/f/${facilityData.customUrl}`, "_blank");
   };
 
   return (
@@ -271,12 +306,7 @@ const FacilitySettings = () => {
                   <Button
                     className="w-full mt-2"
                     variant="outline"
-                    onClick={() => {
-                      toast({
-                        title: "색상 테마 적용됨",
-                        description: "선택한 색상 테마가 적용되었습니다."
-                      });
-                    }}
+                    onClick={applyTheme}
                   >
                     테마 적용
                   </Button>
@@ -296,9 +326,7 @@ const FacilitySettings = () => {
                   <Button
                     variant="secondary"
                     className="w-full"
-                    onClick={() => {
-                      window.open(`/f/${facilityData.customUrl}`, "_blank");
-                    }}
+                    onClick={handlePreview}
                   >
                     시설 페이지 미리보기
                   </Button>

@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 
-// Mock facility data
-const mockFacility = {
+// Mock facility data (기본값으로 사용)
+const defaultFacility = {
   id: "facility-1",
   name: "헬스플러스 피트니스",
   logo: "/placeholder.svg",
@@ -79,16 +79,54 @@ const FacilityPage = () => {
   const [memberships, setMemberships] = useState<any[]>([]);
   const [amenities, setAmenities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // 실제 구현에서는 API 요청으로 시설 정보 가져오기
-    setTimeout(() => {
-      setFacility(mockFacility);
-      setMemberships(mockMemberships);
-      setAmenities(mockAmenities);
-      setLoading(false);
-    }, 500);
+    // 로컬 스토리지에서 시설 데이터 가져오기
+    const loadFacilityData = async () => {
+      try {
+        // 로컬 스토리지에서 데이터 가져오기
+        const savedData = localStorage.getItem('facilityData');
+        const savedLogo = localStorage.getItem('facilityLogo');
+        
+        setTimeout(() => {
+          if (savedData) {
+            const parsedData = JSON.parse(savedData);
+            setFacility({
+              ...defaultFacility,
+              name: parsedData.name,
+              customUrl: parsedData.customUrl,
+              description: parsedData.description,
+              address: parsedData.address,
+              phone: parsedData.phone,
+              theme: {
+                primaryColor: parsedData.primaryColor,
+                secondaryColor: parsedData.secondaryColor
+              }
+            });
+          } else {
+            setFacility(defaultFacility);
+          }
+          
+          if (savedLogo) {
+            setLogoUrl(savedLogo);
+          }
+          
+          setMemberships(mockMemberships);
+          setAmenities(mockAmenities);
+          setLoading(false);
+        }, 500);
+      } catch (error) {
+        console.error("Failed to load facility data:", error);
+        setFacility(defaultFacility);
+        setMemberships(mockMemberships);
+        setAmenities(mockAmenities);
+        setLoading(false);
+      }
+    };
+    
+    loadFacilityData();
   }, [facilityUrl]);
 
   const handleSubscribe = (membershipId: string) => {
@@ -132,8 +170,8 @@ const FacilityPage = () => {
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
             <div className="w-32 h-32 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center">
-              {facility.logo ? (
-                <img src={facility.logo} alt={facility.name} className="w-full h-full object-contain" />
+              {logoUrl ? (
+                <img src={logoUrl} alt={facility.name} className="w-full h-full object-contain" />
               ) : (
                 <div className="text-3xl font-bold text-center">{facility.name.charAt(0)}</div>
               )}
