@@ -84,39 +84,40 @@ const FacilityPage = () => {
 
   useEffect(() => {
     // 로컬 스토리지에서 시설 데이터 가져오기
-    const loadFacilityData = async () => {
+    const loadFacilityData = () => {
       try {
         // 로컬 스토리지에서 데이터 가져오기
         const savedData = localStorage.getItem('facilityData');
         const savedLogo = localStorage.getItem('facilityLogo');
         
-        setTimeout(() => {
-          if (savedData) {
-            const parsedData = JSON.parse(savedData);
-            setFacility({
-              ...defaultFacility,
-              name: parsedData.name,
-              customUrl: parsedData.customUrl,
-              description: parsedData.description,
-              address: parsedData.address,
-              phone: parsedData.phone,
-              theme: {
-                primaryColor: parsedData.primaryColor,
-                secondaryColor: parsedData.secondaryColor
-              }
-            });
-          } else {
-            setFacility(defaultFacility);
-          }
-          
-          if (savedLogo) {
-            setLogoUrl(savedLogo);
-          }
-          
-          setMemberships(mockMemberships);
-          setAmenities(mockAmenities);
-          setLoading(false);
-        }, 500);
+        console.log("로드된 데이터:", savedData);
+        console.log("로드된 로고:", savedLogo);
+        
+        if (savedData) {
+          const parsedData = JSON.parse(savedData);
+          setFacility({
+            ...defaultFacility,
+            name: parsedData.name || defaultFacility.name,
+            customUrl: parsedData.customUrl || defaultFacility.customUrl,
+            description: parsedData.description || defaultFacility.description,
+            address: parsedData.address || defaultFacility.address,
+            phone: parsedData.phone || defaultFacility.phone,
+            theme: {
+              primaryColor: parsedData.primaryColor || defaultFacility.theme.primaryColor,
+              secondaryColor: parsedData.secondaryColor || defaultFacility.theme.secondaryColor
+            }
+          });
+        } else {
+          setFacility(defaultFacility);
+        }
+        
+        if (savedLogo) {
+          setLogoUrl(savedLogo);
+        }
+        
+        setMemberships(mockMemberships);
+        setAmenities(mockAmenities);
+        setLoading(false);
       } catch (error) {
         console.error("Failed to load facility data:", error);
         setFacility(defaultFacility);

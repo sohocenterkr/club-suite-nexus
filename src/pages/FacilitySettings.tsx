@@ -13,7 +13,7 @@ const FacilitySettings = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   
-  // 임시 데이터
+  // 시설 정보 상태 관리
   const [facilityData, setFacilityData] = useState({
     name: "헬스플러스 피트니스",
     customUrl: "health-plus",
@@ -43,10 +43,11 @@ const FacilitySettings = () => {
   }, []);
 
   // 만약 시설 관리자가 아니라면 대시보드로 리디렉션
-  if (user?.role !== "admin") {
-    navigate("/dashboard");
-    return null;
-  }
+  useEffect(() => {
+    if (user?.role !== "admin") {
+      navigate("/dashboard");
+    }
+  }, [user, navigate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -77,6 +78,11 @@ const FacilitySettings = () => {
       
       // 로컬 스토리지에 데이터 저장 (실제 구현에서는 API 호출로 대체)
       localStorage.setItem('facilityData', JSON.stringify(facilityData));
+      
+      // 로고도 저장
+      if (logoPreview) {
+        localStorage.setItem('facilityLogo', logoPreview);
+      }
       
       await new Promise(resolve => setTimeout(resolve, 1000));
       
