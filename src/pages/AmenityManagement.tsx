@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,7 +32,6 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 
-// 타입별 아이콘 매핑
 const typeIcons: Record<string, React.ReactNode> = {
   locker: <Key className="h-5 w-5" />,
   shower: <Droplet className="h-5 w-5" />,
@@ -41,7 +39,6 @@ const typeIcons: Record<string, React.ReactNode> = {
   other: <Package className="h-5 w-5" />,
 };
 
-// 타입 옵션
 const typeOptions = [
   { value: "locker", label: "락커" },
   { value: "shower", label: "샤워실" },
@@ -49,7 +46,6 @@ const typeOptions = [
   { value: "other", label: "기타" },
 ];
 
-// 부대시설 목록 (실제로는 API에서 가져옴)
 const mockAmenities = [
   {
     id: "1",
@@ -104,7 +100,6 @@ const AmenityManagement = () => {
   });
 
   useEffect(() => {
-    // API 호출 대신 임시 데이터 로드
     setTimeout(() => {
       setAmenities(mockAmenities);
       setIsLoading(false);
@@ -170,7 +165,7 @@ const AmenityManagement = () => {
 
     const updatedAmenity = {
       id: selectedAmenity?.id || `new-${Date.now()}`,
-      facilityId: "facility-1", // 실제로는 현재 시설 ID
+      facilityId: "facility-1",
       name: formData.name,
       price: Number(formData.price),
       description: formData.description,
@@ -178,7 +173,6 @@ const AmenityManagement = () => {
     };
 
     if (selectedAmenity) {
-      // 기존 부대시설 수정
       setAmenities(amenities.map(item => 
         item.id === selectedAmenity.id ? updatedAmenity : item
       ));
@@ -187,7 +181,6 @@ const AmenityManagement = () => {
         description: `'${formData.name}' 부대시설이 수정되었습니다.`,
       });
     } else {
-      // 새 부대시설 추가
       setAmenities([...amenities, updatedAmenity]);
       toast({
         title: "부대시설 추가 완료",
@@ -275,7 +268,6 @@ const AmenityManagement = () => {
         </div>
       )}
 
-      {/* 부대시설 추가/수정 다이얼로그 */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -291,7 +283,7 @@ const AmenityManagement = () => {
                 id="name"
                 value={formData.name}
                 onChange={(e) => handleInputChange("name", e.target.value)}
-                error={formErrors.name}
+                className={formErrors.name ? "border-red-500" : ""}
               />
               {formErrors.name && (
                 <p className="text-sm text-red-500">이름을 입력해주세요.</p>
@@ -304,7 +296,7 @@ const AmenityManagement = () => {
                 type="number"
                 value={formData.price}
                 onChange={(e) => handleInputChange("price", e.target.value)}
-                error={formErrors.price}
+                className={formErrors.price ? "border-red-500" : ""}
               />
               {formErrors.price && (
                 <p className="text-sm text-red-500">유효한 가격을 입력해주세요.</p>
@@ -354,7 +346,6 @@ const AmenityManagement = () => {
         </DialogContent>
       </Dialog>
 
-      {/* 삭제 확인 다이얼로그 */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
