@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { Facility, AdminStats, SmsCredit, User } from "@/types";
-import { Building, Users, MessageSquare, CreditCard, ChevronRight, Edit, Plus, Shield } from "lucide-react";
+import { Building, Users, MessageSquare, CreditCard, ChevronRight, Edit, Plus, Shield, User as UserIcon } from "lucide-react";
 
 // 목업 데이터
 const mockFacilities: Facility[] = [
@@ -409,7 +408,7 @@ const AdminDashboard = () => {
           <Card>
             <CardHeader>
               <CardTitle>회원 관리</CardTitle>
-              <CardDescription>전체 회원 목록 및 관리</CardDescription>
+              <CardDescription>전체 회원 ��록 및 관리</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="mb-4">
