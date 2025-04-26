@@ -138,6 +138,10 @@ const FacilityPage = () => {
     navigate(`/checkout/amenity/${amenityId}`);
   };
 
+  const handleRegister = () => {
+    navigate(`/register/${facilityUrl || facility.customUrl}`);
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto py-16 flex justify-center">
@@ -184,6 +188,16 @@ const FacilityPage = () => {
                 <p>{facility.address}</p>
                 <p>{facility.phone}</p>
                 <p>{facility.operatingHours}</p>
+              </div>
+              <div className="mt-4">
+                <Button
+                  style={{
+                    backgroundColor: facility.theme.primaryColor,
+                  }}
+                  onClick={handleRegister}
+                >
+                  이 시설에 회원 가입하기
+                </Button>
               </div>
             </div>
           </div>

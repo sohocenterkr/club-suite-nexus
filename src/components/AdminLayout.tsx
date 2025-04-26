@@ -2,12 +2,12 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { Building, CreditCard, User, Menu, X, Settings, LogOut, Calendar } from "lucide-react";
+import { Building, CreditCard, User, Menu, X, Settings, LogOut, Calendar, MessageSquare } from "lucide-react";
 import { Button } from "./ui/button";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
-  activeTab?: "dashboard" | "facility" | "memberships" | "amenities" | "members";
+  activeTab?: "dashboard" | "facility" | "memberships" | "amenities" | "members" | "sms";
 }
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab = "dashboard" }) => {
@@ -50,6 +50,12 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab = "dashbo
       icon: <User className="h-5 w-5" />,
       href: "/settings/members",
       active: activeTab === "members",
+    },
+    {
+      name: "문자 메시지",
+      icon: <MessageSquare className="h-5 w-5" />,
+      href: "/settings/sms",
+      active: activeTab === "sms",
     },
   ];
 

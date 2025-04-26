@@ -6,7 +6,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (phone: string) => Promise<void>;
-  register: (name: string, phone: string, role?: "admin" | "member") => Promise<void>;
+  register: (name: string, phone: string, role?: "admin" | "member", facilityId?: string | null) => Promise<void>;
   logout: () => void;
 }
 
@@ -65,7 +65,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // 회원가입 함수
-  const register = async (name: string, phone: string, role: "admin" | "member" = "member") => {
+  const register = async (name: string, phone: string, role: "admin" | "member" = "member", facilityId: string | null = null) => {
     try {
       setLoading(true);
       
@@ -76,7 +76,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         name,
         phone,
         role,
-        facilityId: role === "admin" ? `facility-${Date.now()}` : null
+        facilityId: role === "admin" ? `facility-${Date.now()}` : facilityId
       };
       
       // 로컬 스토리지에 사용자 정보 저장

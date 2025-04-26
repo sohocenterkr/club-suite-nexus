@@ -77,3 +77,29 @@ export interface Payment {
   membershipId?: string;
   amenityId?: string;
 }
+
+// SMS 메시지 템플릿 타입
+export interface SmsTemplate {
+  id: string;
+  facilityId: string;
+  name: string;
+  content: string;
+}
+
+// SMS 발신 이력 타입
+export interface SmsHistory {
+  id: string;
+  facilityId: string;
+  recipientId: string;
+  content: string;
+  sentAt: string;
+  status: 'sent' | 'failed';
+}
+
+// SMS 크레딧 정보 타입
+export interface SmsCredit {
+  id: string;
+  facilityId: string;
+  amount: number;
+  updatedAt: string;
+}
