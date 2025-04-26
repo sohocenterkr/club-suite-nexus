@@ -5,8 +5,8 @@ import { User } from "@/types";
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (phone: string) => Promise<void>;
-  register: (name: string, phone: string, role?: "admin" | "member", facilityId?: string | null) => Promise<void>;
+  login: (phone: string, email?: string) => Promise<void>;
+  register: (name: string, phone: string, role?: "admin" | "member" | "superadmin", facilityId?: string | null, email?: string, customFields?: Record<string, string>) => Promise<void>;
   logout: () => void;
 }
 
@@ -39,9 +39,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   // 로그인 함수
-  const login = async (phone: string) => {
+  const login = async (phone: string, email?: string) => {
     try {
       setLoading(true);
+      
+      // 슈퍼 어드민 체크 (고정된 값)
+      if (phone === "010-892-0396" || email === "sohocenter.kr@gmail.com") {
+        const superAdminUser: User = {
+          id: "superadmin-1",
+          name: "소호센터",
+          phone: "010-892-0396",
+          role: "superadmin",
+          facilityId: null
+        };
+        localStorage.setItem("user", JSON.stringify(superAdminUser));
+        setUser(superAdminUser);
+        return;
+      }
       
       // 실제 구현에서는 API 호출로 대체
       // 테스트용 목 데이터
@@ -65,9 +79,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // 회원가입 함수
-  const register = async (name: string, phone: string, role: "admin" | "member" = "member", facilityId: string | null = null) => {
+  const register = async (
+    name: string, 
+    phone: string, 
+    role: "admin" | "member" | "superadmin" = "member", 
+    facilityId: string | null = null,
+    email?: string,
+    customFields?: Record<string, string>
+  ) => {
     try {
       setLoading(true);
+      
+      // 슈퍼 어드민 체크
+      if (phone === "010-892-0396" || email === "sohocenter.kr@gmail.com") {
+        role = "superadmin";
+      }
       
       // 실제 구현에서는 API 호출로 대체
       // 테스트용 목 데이터
@@ -76,7 +102,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         name,
         phone,
         role,
-        facilityId: role === "admin" ? `facility-${Date.now()}` : facilityId
+        facilityId: role === "admin" ? `facility-${Date.now()}` : facilityId,
+        customFields
       };
       
       // 로컬 스토리지에 사용자 정보 저장
@@ -106,3 +133,4 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
+

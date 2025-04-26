@@ -11,6 +11,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import FacilityRegister from "./pages/FacilityRegister"; // 시설별 회원가입 페이지
 import Dashboard from "./pages/Dashboard";
+import AdminDashboard from "./pages/AdminDashboard"; // 슈퍼 어드민 대시보드
 import FacilitySettings from "./pages/FacilitySettings";
 import MembershipManagement from "./pages/MembershipManagement";
 import MemberManagement from "./pages/MemberManagement"; // 회원 관리 페이지
@@ -21,6 +22,7 @@ import CheckIn from "./pages/CheckIn";
 import FacilityPage from "./pages/FacilityPage";
 import Checkout from "./pages/Checkout";
 import NotFound from "./pages/NotFound";
+import CustomFieldsManagement from "./pages/CustomFieldsManagement"; // 사용자 정의 필드 관리 페이지
 
 const queryClient = new QueryClient();
 
@@ -38,6 +40,7 @@ const App = () => (
               <Route path="register" element={<Register />} />
               <Route path="register/:facilityUrl" element={<FacilityRegister />} />
               <Route path="dashboard" element={<Dashboard />} />
+              <Route path="admin" element={<AdminDashboard />} />
               <Route path="settings/facility" element={<FacilitySettings />} />
               <Route path="settings/memberships" element={<MembershipManagement />} />
               <Route path="settings/amenities" element={<AmenityManagement />} />
@@ -45,6 +48,7 @@ const App = () => (
               <Route path="settings/sms" element={<SMSManagement />} />
               <Route path="settings/sms/:memberId" element={<SMSManagement />} />
               <Route path="settings/sms-charge" element={<SMSCharge />} />
+              <Route path="settings/custom-fields" element={<CustomFieldsManagement />} />
               <Route path="check-in" element={<CheckIn />} />
               <Route path="checkout/:type/:id" element={<Checkout />} />
               <Route path="f/:facilityUrl" element={<FacilityPage />} />

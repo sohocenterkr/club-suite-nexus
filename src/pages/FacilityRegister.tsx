@@ -1,173 +1,317 @@
 
-import { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
+import { Facility, CustomField } from "@/types";
 
 const FacilityRegister = () => {
+  const { facilityUrl } = useParams<{ facilityUrl: string }>();
   const navigate = useNavigate();
-  const { facilityUrl } = useParams();
   const { register } = useAuth();
+
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [facilityName, setFacilityName] = useState<string | null>(null);
-  const [facilityId, setFacilityId] = useState<string | null>(null);
-
-  // 페이지 로딩 시 facilityUrl로 시설 정보 가져오기
-  useState(() => {
-    const loadFacilityData = () => {
-      try {
-        // 로컬 스토리지에서 시설 데이터 가져오기 (실제 구현시 API로 대체)
-        const savedData = localStorage.getItem('facilityData');
-        if (savedData) {
-          const parsedData = JSON.parse(savedData);
-          setFacilityName(parsedData.name);
-          setFacilityId("facility-1"); // 임시 ID, 실제 구현시 API에서 받아오기
+  const [loading, setLoading] = useState(true);
+  const [facility, setFacility] = useState<Facility | null>(null);
+  const [customFieldValues, setCustomFieldValues] = useState<Record<string, string>>({});
+  
+  useEffect(() => {
+    // 실제로는 API에서 시설 정보 가져오기
+    // 지금은 목업 데이터로 대체
+    const fetchFacility = () => {
+      // 목업 시설 데이터
+      const mockFacilities: Facility[] = [
+        {
+          id: "facility-1",
+          name: "헬스플러스 피트니스",
+          logo: null,
+          customUrl: "health-plus",
+          theme: { primaryColor: "#4f46e5", secondaryColor: "#818cf8" },
+          ownerId: "admin-1",
+          customRegistrationFields: [
+            { id: "field-1", facilityId: "facility-1", name: "생년월일", type: "date", required: true },
+            { id: "field-2", facilityId: "facility-1", name: "직업", type: "text", required: false },
+            { id: "field-3", facilityId: "facility-1", name: "운동 목적", type: "select", required: true, options: ["다이어트", "근력 향상", "건강 관리", "기타"] }
+          ]
+        },
+        {
+          id: "facility-2",
+          name: "우먼스 요가 스튜디오",
+          logo: null,
+          customUrl: "womens-yoga",
+          theme: { primaryColor: "#d946ef", secondaryColor: "#f0abfc" },
+          ownerId: "admin-2",
+          customRegistrationFields: [
+            { id: "field-4", facilityId: "facility-2", name: "요가 경험", type: "select", required: true, options: ["초보자", "중급자", "상급자"] },
+            { id: "field-5", facilityId: "facility-2", name: "알레르기", type: "text", required: false }
+          ]
         }
-      } catch (error) {
-        console.error("시설 정보를 불러오는데 실패했습니다:", error);
+      ];
+
+      // URL로 시설 찾기
+      const foundFacility = mockFacilities.find(f => f.customUrl === facilityUrl);
+      
+      if (foundFacility) {
+        setFacility(foundFacility);
+        // 커스텀 필드의 기본값 설정
+        const defaultValues: Record<string, string> = {};
+        foundFacility.customRegistrationFields?.forEach(field => {
+          defaultValues[field.id] = "";
+        });
+        setCustomFieldValues(defaultValues);
+      } else {
         toast({
-          title: "오류",
-          description: "시설 정보를 불러오는데 실패했습니다.",
+          title: "시설을 찾을 수 없음",
+          description: "해당 URL의 시설을 찾을 수 없습니다.",
           variant: "destructive"
         });
+        navigate("/register");
       }
+      
+      setLoading(false);
     };
-    
-    loadFacilityData();
-  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
+    if (facilityUrl) {
+      fetchFacility();
+    } else {
+      navigate("/register");
+    }
+  }, [facilityUrl, navigate]);
+
+  // 전화번호 포맷팅 핸들러
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, '');
+    
+    if (value.length <= 11) {
+      // 010-1234-5678 형식으로 포맷팅
+      let formattedValue = '';
+      
+      if (value.length > 7) {
+        formattedValue = `${value.slice(0, 3)}-${value.slice(3, 7)}-${value.slice(7)}`;
+      } else if (value.length > 3) {
+        formattedValue = `${value.slice(0, 3)}-${value.slice(3)}`;
+      } else {
+        formattedValue = value;
+      }
+      
+      setPhone(formattedValue);
+    }
+  };
+
+  // 커스텀 필드 값 변경 핸들러
+  const handleCustomFieldChange = (fieldId: string, value: string) => {
+    setCustomFieldValues({
+      ...customFieldValues,
+      [fieldId]: value,
+    });
+  };
+
+  // 회원가입 처리
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!name.trim() || !phone.trim()) {
+    // 폼 유효성 검사
+    if (!name || !phone) {
       toast({
         title: "입력 오류",
         description: "이름과 전화번호를 입력해주세요.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
     
-    if (!facilityId) {
-      toast({
-        title: "시설 오류",
-        description: "시설 정보를 불러오는데 실패했습니다.",
-        variant: "destructive"
-      });
-      return;
+    // 필수 커스텀 필드 검사
+    if (facility?.customRegistrationFields) {
+      const requiredFields = facility.customRegistrationFields.filter(field => field.required);
+      for (const field of requiredFields) {
+        if (!customFieldValues[field.id]) {
+          toast({
+            title: "입력 오류",
+            description: `${field.name} 필드는 필수 입력 항목입니다.`,
+            variant: "destructive",
+          });
+          return;
+        }
+      }
     }
     
     try {
-      setIsLoading(true);
-      // 시설 ID를 전달하여 해당 시설의 회원으로 가입
-      await register(name, phone, "member", facilityId);
+      setLoading(true);
+      
+      // 회원가입 처리
+      await register(name, phone, "member", facility?.id || null, undefined, customFieldValues);
+      
       toast({
-        title: "회원가입 완료",
-        description: `${facilityName} 시설의 회원으로 가입이 완료되었습니다.`
+        title: "회원가입 성공",
+        description: `${facility?.name || '시설'}의 회원으로 가입되었습니다.`,
       });
+      
       navigate("/dashboard");
+      
     } catch (error) {
+      console.error(error);
       toast({
         title: "회원가입 실패",
-        description: "회원가입 중 오류가 발생했습니다. 다시 시도해주세요.",
-        variant: "destructive"
+        description: "회원가입에 실패했습니다. 다시 시도해주세요.",
+        variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  const formatPhoneNumber = (value: string) => {
-    // 숫자만 입력 가능하도록
-    const numbers = value.replace(/[^0-9]/g, "");
-    
-    // 한국 전화번호 형식 (010-1234-5678)
-    if (numbers.length <= 3) {
-      return numbers;
-    } else if (numbers.length <= 7) {
-      return `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
-    } else {
-      return `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}-${numbers.slice(7, 11)}`;
+  // 커스텀 필드 렌더링 함수
+  const renderCustomField = (field: CustomField) => {
+    switch (field.type) {
+      case "text":
+        return (
+          <div key={field.id} className="space-y-2">
+            <Label htmlFor={field.id}>
+              {field.name} {field.required && <span className="text-destructive">*</span>}
+            </Label>
+            <Input
+              id={field.id}
+              value={customFieldValues[field.id] || ""}
+              onChange={(e) => handleCustomFieldChange(field.id, e.target.value)}
+              placeholder={`${field.name}을(를) 입력하세요`}
+            />
+          </div>
+        );
+        
+      case "number":
+        return (
+          <div key={field.id} className="space-y-2">
+            <Label htmlFor={field.id}>
+              {field.name} {field.required && <span className="text-destructive">*</span>}
+            </Label>
+            <Input
+              id={field.id}
+              type="number"
+              value={customFieldValues[field.id] || ""}
+              onChange={(e) => handleCustomFieldChange(field.id, e.target.value)}
+              placeholder={`${field.name}을(를) 입력하세요`}
+            />
+          </div>
+        );
+        
+      case "date":
+        return (
+          <div key={field.id} className="space-y-2">
+            <Label htmlFor={field.id}>
+              {field.name} {field.required && <span className="text-destructive">*</span>}
+            </Label>
+            <Input
+              id={field.id}
+              type="date"
+              value={customFieldValues[field.id] || ""}
+              onChange={(e) => handleCustomFieldChange(field.id, e.target.value)}
+            />
+          </div>
+        );
+        
+      case "select":
+        return (
+          <div key={field.id} className="space-y-2">
+            <Label htmlFor={field.id}>
+              {field.name} {field.required && <span className="text-destructive">*</span>}
+            </Label>
+            <Select
+              value={customFieldValues[field.id] || ""}
+              onValueChange={(value) => handleCustomFieldChange(field.id, value)}
+            >
+              <SelectTrigger id={field.id}>
+                <SelectValue placeholder={`${field.name}을(를) 선택하세요`} />
+              </SelectTrigger>
+              <SelectContent>
+                {field.options?.map((option, index) => (
+                  <SelectItem key={index} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        );
+        
+      default:
+        return null;
     }
   };
-  
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formatted = formatPhoneNumber(e.target.value);
-    setPhone(formatted);
-  };
 
-  if (!facilityName) {
+  if (loading && !facility) {
     return (
-      <div className="container mx-auto py-16 px-4">
-        <div className="max-w-md mx-auto text-center">
-          <h2 className="text-2xl font-bold">시설 정보 로딩 중...</h2>
-          <p className="mt-2 text-muted-foreground">잠시만 기다려주세요.</p>
-        </div>
+      <div className="container mx-auto flex h-screen flex-col items-center justify-center">
+        <p>로딩 중...</p>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto py-16 px-4">
-      <div className="max-w-md mx-auto">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl">{facilityName} 회원가입</CardTitle>
-            <CardDescription>
-              {facilityName}의 회원으로 가입하여 서비스를 이용해보세요.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <label htmlFor="name" className="block text-sm font-medium">
-                  이름
-                </label>
-                <Input
-                  id="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="이름을 입력해주세요"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="phone" className="block text-sm font-medium">
-                  전화번호
-                </label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  value={phone}
-                  onChange={handlePhoneChange}
-                  placeholder="010-0000-0000"
-                  required
-                />
-              </div>
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isLoading}
-              >
-                {isLoading ? "처리 중..." : "가입하기"}
-              </Button>
-            </form>
-          </CardContent>
-          <CardFooter className="flex justify-center">
-            <p className="text-sm text-muted-foreground">
-              이미 계정이 있으신가요?{" "}
-              <a href="/login" className="text-primary font-medium hover:underline">
-                로그인
-              </a>
-            </p>
-          </CardFooter>
-        </Card>
-      </div>
+    <div className="container mx-auto flex flex-col items-center justify-center py-10 px-4 max-w-md">
+      <Card className="w-full">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl text-center">
+            {facility?.name || '시설'} 회원 가입
+          </CardTitle>
+          <CardDescription className="text-center">
+            {facility?.name || '시설'}의 회원으로 가입하고 서비스를 이용하세요
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleRegister} className="space-y-4">
+            {/* 기본 필드 */}
+            <div className="space-y-2">
+              <Label htmlFor="name">이름 <span className="text-destructive">*</span></Label>
+              <Input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="이름을 입력하세요"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone">전화번호 <span className="text-destructive">*</span></Label>
+              <Input
+                id="phone"
+                value={phone}
+                onChange={handlePhoneChange}
+                placeholder="010-0000-0000"
+              />
+            </div>
+            
+            {/* 커스텀 필드 */}
+            {facility?.customRegistrationFields?.map(field => renderCustomField(field))}
+            
+            <Button className="w-full" type="submit" disabled={loading}>
+              {loading ? "가입 중..." : "가입하기"}
+            </Button>
+          </form>
+        </CardContent>
+        <CardFooter className="flex justify-center">
+          <p className="text-center text-sm text-muted-foreground">
+            이미 계정이 있으신가요?{" "}
+            <Link
+              to="/login"
+              className="underline underline-offset-4 hover:text-primary"
+            >
+              로그인
+            </Link>
+          </p>
+        </CardFooter>
+      </Card>
     </div>
   );
 };

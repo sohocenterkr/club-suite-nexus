@@ -4,8 +4,10 @@ export interface User {
   id: string;
   name: string;
   phone: string;
-  role: 'admin' | 'member';
+  role: 'admin' | 'member' | 'superadmin';
   facilityId: string | null;
+  // 추가 정보 필드
+  customFields?: Record<string, string>;
 }
 
 // 시설 타입 정의
@@ -19,6 +21,18 @@ export interface Facility {
     secondaryColor: string;
   };
   ownerId: string;
+  // 회원 가입 시 사용자 정의 필드
+  customRegistrationFields?: CustomField[];
+}
+
+// 사용자 정의 필드 타입
+export interface CustomField {
+  id: string;
+  facilityId: string;
+  name: string;
+  type: 'text' | 'number' | 'date' | 'select';
+  required: boolean;
+  options?: string[]; // 'select' 타입일 경우 선택 옵션
 }
 
 // 멤버십(정기권) 타입 정의
@@ -73,7 +87,7 @@ export interface Payment {
   amount: number;
   status: 'pending' | 'completed' | 'failed';
   date: string;
-  type: 'membership' | 'amenity';
+  type: 'membership' | 'amenity' | 'sms_credit';
   membershipId?: string;
   amenityId?: string;
 }
@@ -103,3 +117,13 @@ export interface SmsCredit {
   amount: number;
   updatedAt: string;
 }
+
+// 어드민 통계 타입
+export interface AdminStats {
+  totalFacilities: number;
+  totalMembers: number;
+  totalRevenue: number;
+  activeMemberships: number;
+  smsCreditsUsed: number;
+}
+
