@@ -12,7 +12,6 @@ import { toast } from "@/hooks/use-toast";
 import { Facility, AdminStats, SmsCredit, User } from "@/types";
 import { Building, Users, MessageSquare, CreditCard, ChevronRight, Edit, Plus, Shield, User as UserIcon } from "lucide-react";
 
-// 목업 데이터
 const mockFacilities: Facility[] = [
   {
     id: "facility-1",
@@ -94,25 +93,22 @@ const AdminDashboard = () => {
   const [newFacilityUrl, setNewFacilityUrl] = useState("");
 
   useEffect(() => {
-    // 슈퍼 어드민 체크
     if (!user || user.role !== "superadmin") {
       navigate("/login");
       return;
     }
 
-    // 데이터 로드 (실제로는 API 호출)
     setFacilities(mockFacilities);
     setMembers(mockMembers);
     setFacilityManagers(mockFacilityManagers);
     setSmsCredits(mockSmsCredits);
     
-    // 통계 계산
     setStats({
       totalFacilities: mockFacilities.length,
       totalMembers: mockMembers.length,
-      totalRevenue: 12500000, // 예시 금액
-      activeMemberships: 35, // 예시 값
-      smsCreditsUsed: 1200 // 예시 값
+      totalRevenue: 12500000,
+      activeMemberships: 35,
+      smsCreditsUsed: 1200
     });
   }, [user, navigate]);
 
@@ -126,7 +122,6 @@ const AdminDashboard = () => {
       return;
     }
 
-    // URL 유효성 검사 (영문, 숫자, 하이픈만 허용)
     if (!/^[a-z0-9-]+$/.test(newFacilityUrl)) {
       toast({
         title: "URL 형식 오류",
@@ -136,7 +131,6 @@ const AdminDashboard = () => {
       return;
     }
 
-    // 중복 URL 검사
     if (facilities.some(f => f.customUrl === newFacilityUrl)) {
       toast({
         title: "URL 중복",
@@ -168,36 +162,30 @@ const AdminDashboard = () => {
     });
   };
 
-  // 시설 필터링
   const filteredFacilities = facilities.filter(facility =>
     facility.name.toLowerCase().includes(facilitySearchTerm.toLowerCase()) ||
     facility.customUrl.toLowerCase().includes(facilitySearchTerm.toLowerCase())
   );
 
-  // 회원 필터링
   const filteredMembers = members.filter(member =>
     member.name.toLowerCase().includes(memberSearchTerm.toLowerCase()) ||
     member.phone.includes(memberSearchTerm.replace(/-/g, ""))
   );
 
-  // 시설 관리자 필터링
   const filteredManagers = facilityManagers.filter(manager =>
     manager.name.toLowerCase().includes(managerSearchTerm.toLowerCase()) ||
     manager.phone.includes(managerSearchTerm.replace(/-/g, ""))
   );
 
-  // 시설별 SMS 충전금액 조회
   const getFacilitySmsCredit = (facilityId: string): number => {
     const credit = smsCredits.find(c => c.facilityId === facilityId);
     return credit ? credit.amount : 0;
   };
 
-  // 시설별 회원 수 조회
   const getFacilityMemberCount = (facilityId: string): number => {
     return members.filter(m => m.facilityId === facilityId).length;
   };
 
-  // 시설 관리자 이름 조회
   const getFacilityManager = (ownerId: string): string => {
     const manager = facilityManagers.find(m => m.id === ownerId);
     return manager ? manager.name : "-";
@@ -227,14 +215,13 @@ const AdminDashboard = () => {
             <Users className="mr-2 h-4 w-4" /> 회원 관리
           </TabsTrigger>
           <TabsTrigger value="managers">
-            <User className="mr-2 h-4 w-4" /> 시설 관리자
+            <UserIcon className="mr-2 h-4 w-4" /> 시설 관리자
           </TabsTrigger>
           <TabsTrigger value="sms">
             <MessageSquare className="mr-2 h-4 w-4" /> SMS 관리
           </TabsTrigger>
         </TabsList>
 
-        {/* 요약 탭 */}
         <TabsContent value="overview">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <Card>
@@ -333,7 +320,6 @@ const AdminDashboard = () => {
           </Card>
         </TabsContent>
 
-        {/* 시설 관리 탭 */}
         <TabsContent value="facilities">
           <Card className="mb-6">
             <CardHeader className="flex flex-row items-center justify-between">
@@ -403,12 +389,11 @@ const AdminDashboard = () => {
           </Card>
         </TabsContent>
 
-        {/* 회원 관리 탭 */}
         <TabsContent value="members">
           <Card>
             <CardHeader>
               <CardTitle>회원 관리</CardTitle>
-              <CardDescription>전체 회원 ��록 및 관리</CardDescription>
+              <CardDescription>전체 회원 목록 및 관리</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="mb-4">
@@ -458,7 +443,6 @@ const AdminDashboard = () => {
           </Card>
         </TabsContent>
 
-        {/* 시설 관리자 탭 */}
         <TabsContent value="managers">
           <Card>
             <CardHeader>
@@ -513,7 +497,6 @@ const AdminDashboard = () => {
           </Card>
         </TabsContent>
 
-        {/* SMS 관리 탭 */}
         <TabsContent value="sms">
           <Card>
             <CardHeader>
@@ -557,7 +540,6 @@ const AdminDashboard = () => {
         </TabsContent>
       </Tabs>
 
-      {/* 시설 추가 다이얼로그 */}
       <Dialog open={showAddFacilityDialog} onOpenChange={setShowAddFacilityDialog}>
         <DialogContent>
           <DialogHeader>
