@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
@@ -20,7 +21,8 @@ const FacilitySettings = () => {
     address: "서울시 강남구 역삼동 123-45",
     phone: "02-1234-5678",
     primaryColor: "#3b82f6",
-    secondaryColor: "#60a5fa"
+    secondaryColor: "#60a5fa",
+    operatingHours: "평일 06:00-22:00, 주말 10:00-18:00"
   });
   
   const [isLoading, setIsLoading] = useState(false);
@@ -33,7 +35,7 @@ const FacilitySettings = () => {
     const savedLogo = localStorage.getItem('facilityLogo');
     
     if (savedData) {
-      setFacilityData(JSON.parse(savedData));
+      setFacilityData({...facilityData, ...JSON.parse(savedData)});
     }
     
     if (savedLogo) {
@@ -64,6 +66,12 @@ const FacilitySettings = () => {
         const result = reader.result as string;
         setLogoPreview(result);
         localStorage.setItem('facilityLogo', result);
+        
+        // 로고 변경 즉시 로컬 스토리지에 저장하여 미리보기에 바로 반영
+        toast({
+          title: "로고 변경 완료",
+          description: "로고가 성공적으로 변경되었습니다."
+        });
       };
       reader.readAsDataURL(file);
     }
@@ -75,15 +83,18 @@ const FacilitySettings = () => {
     try {
       setIsLoading(true);
       
-      // 로컬 스토리지에 데이터 저장 (실제 구현에서는 API 호출로 대체)
+      // 로컬 스토리지에 데이터 저장
       localStorage.setItem('facilityData', JSON.stringify(facilityData));
       
-      // 로고도 저장
+      // 로고도 저장 (이미 handleLogoChange에서 저장했지만 확실히 하기 위해)
       if (logoPreview) {
         localStorage.setItem('facilityLogo', logoPreview);
       }
       
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // 스토리지 이벤트 발생시키기 (다른 탭에서 반영하기 위해)
+      window.dispatchEvent(new Event('storage'));
+      
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       toast({
         title: "설정 저장 완료",
@@ -101,7 +112,19 @@ const FacilitySettings = () => {
   };
 
   const applyTheme = () => {
-    localStorage.setItem('facilityData', JSON.stringify(facilityData));
+    // 색상 테마만 저장
+    const currentData = JSON.parse(localStorage.getItem('facilityData') || '{}');
+    const updatedData = {
+      ...currentData,
+      primaryColor: facilityData.primaryColor,
+      secondaryColor: facilityData.secondaryColor
+    };
+    
+    localStorage.setItem('facilityData', JSON.stringify(updatedData));
+    
+    // 스토리지 이벤트 발생시키기
+    window.dispatchEvent(new Event('storage'));
+    
     toast({
       title: "색상 테마 적용됨",
       description: "선택한 색상 테마가 적용되었습니다."
@@ -115,7 +138,10 @@ const FacilitySettings = () => {
       localStorage.setItem('facilityLogo', logoPreview);
     }
     
-    // 새 창에서 미리보기 페이지 열기 (facilityUrl 매개변수 없이 로컬 스토리지 데이터 사용)
+    // 스토리지 이벤트 발생시키기
+    window.dispatchEvent(new Event('storage'));
+    
+    // 새 창에서 미리보기 페이지 열기
     window.open(`/f/${facilityData.customUrl}`, "_blank");
   };
 
@@ -209,6 +235,19 @@ const FacilitySettings = () => {
                         placeholder="시설 연락처"
                       />
                     </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label htmlFor="operatingHours" className="block text-sm font-medium">
+                      영업 시간
+                    </label>
+                    <Input
+                      id="operatingHours"
+                      name="operatingHours"
+                      value={facilityData.operatingHours}
+                      onChange={handleChange}
+                      placeholder="예: 평일 06:00-22:00, 주말 10:00-18:00"
+                    />
                   </div>
                   
                   <div className="pt-4">

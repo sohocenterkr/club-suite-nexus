@@ -86,6 +86,9 @@ const FacilityPage = () => {
     // 로컬 스토리지에서 시설 데이터 가져오기
     const loadFacilityData = () => {
       try {
+        // 새로운 데이터가 변경될 때마다 로드되도록 설정
+        console.log("시설 데이터 로딩 시작...");
+        
         // 로컬 스토리지에서 데이터 가져오기
         const savedData = localStorage.getItem('facilityData');
         const savedLogo = localStorage.getItem('facilityLogo');
@@ -102,17 +105,21 @@ const FacilityPage = () => {
             description: parsedData.description || defaultFacility.description,
             address: parsedData.address || defaultFacility.address,
             phone: parsedData.phone || defaultFacility.phone,
+            operatingHours: parsedData.operatingHours || defaultFacility.operatingHours,
             theme: {
               primaryColor: parsedData.primaryColor || defaultFacility.theme.primaryColor,
               secondaryColor: parsedData.secondaryColor || defaultFacility.theme.secondaryColor
             }
           });
+          console.log("시설 데이터 설정 완료:", parsedData);
         } else {
           setFacility(defaultFacility);
+          console.log("기본 시설 데이터 사용");
         }
         
         if (savedLogo) {
           setLogoUrl(savedLogo);
+          console.log("로고 설정 완료");
         }
         
         setMemberships(mockMemberships);
@@ -124,10 +131,24 @@ const FacilityPage = () => {
         setMemberships(mockMemberships);
         setAmenities(mockAmenities);
         setLoading(false);
+        
+        toast({
+          title: "데이터 로딩 오류",
+          description: "시설 정보를 불러오는 중 오류가 발생했습니다.",
+          variant: "destructive"
+        });
       }
     };
     
     loadFacilityData();
+    
+    // 로컬 스토리지 변경 감지를 위한 이벤트 리스너 추가
+    window.addEventListener('storage', loadFacilityData);
+    
+    // 컴포넌트 언마운트 시 이벤트 리스너 제거
+    return () => {
+      window.removeEventListener('storage', loadFacilityData);
+    };
   }, []);
 
   const handleSubscribe = (membershipId: string) => {
