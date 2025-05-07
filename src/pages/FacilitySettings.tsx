@@ -9,6 +9,17 @@ import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import AdminLayout from "@/components/AdminLayout";
 
+// 커스텀 이벤트 디스패치 함수
+const dispatchStorageEvent = () => {
+  console.log("커스텀 스토리지 이벤트 발생");
+  
+  // 브라우저 스토리지 이벤트 발생 (다른 탭에서 감지)
+  window.dispatchEvent(new Event('storage'));
+  
+  // 커스텀 이벤트 발생 (같은 탭에서 감지)
+  window.dispatchEvent(new Event('custom-storage'));
+};
+
 const FacilitySettings = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -35,10 +46,12 @@ const FacilitySettings = () => {
     const savedLogo = localStorage.getItem('facilityLogo');
     
     if (savedData) {
+      console.log("FacilitySettings: 저장된 데이터 로드", savedData);
       setFacilityData({...facilityData, ...JSON.parse(savedData)});
     }
     
     if (savedLogo) {
+      console.log("FacilitySettings: 저장된 로고 로드");
       setLogoPreview(savedLogo);
     }
   }, []);
@@ -65,9 +78,13 @@ const FacilitySettings = () => {
       reader.onloadend = () => {
         const result = reader.result as string;
         setLogoPreview(result);
-        localStorage.setItem('facilityLogo', result);
         
         // 로고 변경 즉시 로컬 스토리지에 저장하여 미리보기에 바로 반영
+        localStorage.setItem('facilityLogo', result);
+        
+        // 커스텀 이벤트 발생
+        dispatchStorageEvent();
+        
         toast({
           title: "로고 변경 완료",
           description: "로고가 성공적으로 변경되었습니다."
@@ -82,6 +99,7 @@ const FacilitySettings = () => {
     
     try {
       setIsLoading(true);
+      console.log("FacilitySettings: 데이터 저장 시작", facilityData);
       
       // 로컬 스토리지에 데이터 저장
       localStorage.setItem('facilityData', JSON.stringify(facilityData));
@@ -91,8 +109,8 @@ const FacilitySettings = () => {
         localStorage.setItem('facilityLogo', logoPreview);
       }
       
-      // 스토리지 이벤트 발생시키기 (다른 탭에서 반영하기 위해)
-      window.dispatchEvent(new Event('storage'));
+      // 커스텀 이벤트 발생
+      dispatchStorageEvent();
       
       await new Promise(resolve => setTimeout(resolve, 500));
       
@@ -101,6 +119,7 @@ const FacilitySettings = () => {
         description: "시설 정보가 성공적으로 저장되었습니다."
       });
     } catch (error) {
+      console.error("저장 실패:", error);
       toast({
         title: "저장 실패",
         description: "시설 정보를 저장하는 중 오류가 발생했습니다.",
@@ -122,8 +141,8 @@ const FacilitySettings = () => {
     
     localStorage.setItem('facilityData', JSON.stringify(updatedData));
     
-    // 스토리지 이벤트 발생시키기
-    window.dispatchEvent(new Event('storage'));
+    // 커스텀 이벤트 발생
+    dispatchStorageEvent();
     
     toast({
       title: "색상 테마 적용됨",
@@ -138,8 +157,8 @@ const FacilitySettings = () => {
       localStorage.setItem('facilityLogo', logoPreview);
     }
     
-    // 스토리지 이벤트 발생시키기
-    window.dispatchEvent(new Event('storage'));
+    // 커스텀 이벤트 발생
+    dispatchStorageEvent();
     
     // 새 창에서 미리보기 페이지 열기
     window.open(`/f/${facilityData.customUrl}`, "_blank");
