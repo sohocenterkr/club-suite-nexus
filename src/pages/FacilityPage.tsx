@@ -128,7 +128,7 @@ const FacilityPage = () => {
     };
     
     loadFacilityData();
-  }, [facilityUrl]);
+  }, []);
 
   const handleSubscribe = (membershipId: string) => {
     navigate(`/checkout/membership/${membershipId}`);
@@ -139,7 +139,7 @@ const FacilityPage = () => {
   };
 
   const handleRegister = () => {
-    navigate(`/register/${facilityUrl || facility.customUrl}`);
+    navigate(`/register/${facilityUrl || facility?.customUrl}`);
   };
 
   if (loading) {

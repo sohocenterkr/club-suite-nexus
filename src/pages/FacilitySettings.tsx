@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
@@ -115,6 +114,8 @@ const FacilitySettings = () => {
     if (logoPreview) {
       localStorage.setItem('facilityLogo', logoPreview);
     }
+    
+    // 새 창에서 미리보기 페이지 열기 (facilityUrl 매개변수 없이 로컬 스토리지 데이터 사용)
     window.open(`/f/${facilityData.customUrl}`, "_blank");
   };
 
