@@ -11,6 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
+import { loadFacilityData } from "@/utils/storageUtils";
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -38,6 +39,45 @@ const Navbar = () => {
     navigate("/");
   };
 
+  // 시설장인 경우 해당 시설의 customUrl 가져오기
+  const facilityUrl = user?.role === "admin" && user?.facilityId 
+    ? user.facilityId.replace("facility-", "") 
+    : "";
+
+  // 시설장 메뉴 아이템 렌더링 함수
+  const renderAdminMenuItems = () => {
+    if (user?.role !== "admin") return null;
+    
+    return (
+      <>
+        <Link
+          to={`/f/${facilityUrl}`}
+          className="text-sm font-medium text-muted-foreground hover:text-foreground"
+        >
+          홈
+        </Link>
+        <Link
+          to="/settings/memberships"
+          className="text-sm font-medium text-muted-foreground hover:text-foreground"
+        >
+          요금제
+        </Link>
+        <Link
+          to="/settings/amenities"
+          className="text-sm font-medium text-muted-foreground hover:text-foreground"
+        >
+          부대시설
+        </Link>
+        <Link
+          to="/settings/facility"
+          className="text-sm font-medium text-muted-foreground hover:text-foreground"
+        >
+          서비스
+        </Link>
+      </>
+    );
+  };
+
   return (
     <header
       className={`sticky top-0 z-50 w-full transition-all duration-200 ${
@@ -54,30 +94,39 @@ const Navbar = () => {
 
           {/* Desktop Menu */}
           <nav className="hidden md:flex items-center space-x-6">
-            <Link
-              to="/"
-              className="text-sm font-medium text-muted-foreground hover:text-foreground"
-            >
-              홈
-            </Link>
-            <Link
-              to="/features"
-              className="text-sm font-medium text-muted-foreground hover:text-foreground"
-            >
-              기능
-            </Link>
-            <Link
-              to="/pricing"
-              className="text-sm font-medium text-muted-foreground hover:text-foreground"
-            >
-              요금제
-            </Link>
-            <Link
-              to="/check-in"
-              className="text-sm font-medium text-muted-foreground hover:text-foreground"
-            >
-              입장 확인
-            </Link>
+            {user?.role === "admin" ? (
+              // 시설장 메뉴
+              renderAdminMenuItems()
+            ) : (
+              // 일반 메뉴
+              <>
+                <Link
+                  to="/"
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground"
+                >
+                  홈
+                </Link>
+                <Link
+                  to="/features"
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground"
+                >
+                  기능
+                </Link>
+                <Link
+                  to="/pricing"
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground"
+                >
+                  요금제
+                </Link>
+                <Link
+                  to="/check-in"
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground"
+                >
+                  입장 확인
+                </Link>
+              </>
+            )}
+            
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -148,34 +197,72 @@ const Navbar = () => {
       {isMenuOpen && (
         <div className="md:hidden bg-background py-4 px-4 shadow-lg">
           <nav className="flex flex-col space-y-4">
-            <Link
-              to="/"
-              className="text-sm font-medium py-2"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              홈
-            </Link>
-            <Link
-              to="/features"
-              className="text-sm font-medium py-2"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              기능
-            </Link>
-            <Link
-              to="/pricing"
-              className="text-sm font-medium py-2"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              요금제
-            </Link>
-            <Link
-              to="/check-in"
-              className="text-sm font-medium py-2"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              입장 확인
-            </Link>
+            {user?.role === "admin" ? (
+              // 시설장 모바일 메뉴
+              <>
+                <Link
+                  to={`/f/${facilityUrl}`}
+                  className="text-sm font-medium py-2"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  홈
+                </Link>
+                <Link
+                  to="/settings/memberships"
+                  className="text-sm font-medium py-2"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  요금제
+                </Link>
+                <Link
+                  to="/settings/amenities"
+                  className="text-sm font-medium py-2"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  부대시설
+                </Link>
+                <Link
+                  to="/settings/facility"
+                  className="text-sm font-medium py-2"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  서비스
+                </Link>
+              </>
+            ) : (
+              // 일반 모바일 메뉴
+              <>
+                <Link
+                  to="/"
+                  className="text-sm font-medium py-2"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  홈
+                </Link>
+                <Link
+                  to="/features"
+                  className="text-sm font-medium py-2"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  기능
+                </Link>
+                <Link
+                  to="/pricing"
+                  className="text-sm font-medium py-2"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  요금제
+                </Link>
+                <Link
+                  to="/check-in"
+                  className="text-sm font-medium py-2"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  입장 확인
+                </Link>
+              </>
+            )}
+            
             {user ? (
               <>
                 <hr className="my-2" />

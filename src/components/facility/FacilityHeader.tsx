@@ -1,5 +1,6 @@
 
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 interface FacilityHeaderProps {
   facility: {
@@ -18,6 +19,16 @@ interface FacilityHeaderProps {
 }
 
 const FacilityHeader = ({ facility, logoUrl, onRegister }: FacilityHeaderProps) => {
+  const navigate = useNavigate();
+
+  const handleCheckIn = () => {
+    navigate("/check-in");
+  };
+
+  const handleDashboard = () => {
+    navigate("/login");
+  };
+
   return (
     <div 
       className="bg-white shadow-sm py-8"
@@ -42,7 +53,7 @@ const FacilityHeader = ({ facility, logoUrl, onRegister }: FacilityHeaderProps) 
               <p>{facility.phone}</p>
               <p>{facility.operatingHours}</p>
             </div>
-            <div className="mt-4">
+            <div className="mt-4 flex flex-wrap gap-3 justify-center md:justify-start">
               <Button
                 style={{
                   backgroundColor: facility.theme.primaryColor,
@@ -50,6 +61,26 @@ const FacilityHeader = ({ facility, logoUrl, onRegister }: FacilityHeaderProps) 
                 onClick={onRegister}
               >
                 이 시설에 회원 가입하기
+              </Button>
+              <Button 
+                variant="outline" 
+                style={{
+                  borderColor: facility.theme.primaryColor,
+                  color: facility.theme.primaryColor,
+                }}
+                onClick={handleCheckIn}
+              >
+                입장 확인
+              </Button>
+              <Button
+                variant="outline"
+                style={{
+                  borderColor: facility.theme.primaryColor,
+                  color: facility.theme.primaryColor,
+                }}
+                onClick={handleDashboard}
+              >
+                내 대시보드
               </Button>
             </div>
           </div>
