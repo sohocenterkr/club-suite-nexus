@@ -7,7 +7,12 @@ import AdminLayout from "@/components/AdminLayout";
 import BasicInfoForm from "@/components/facility/BasicInfoForm";
 import LogoThemeSettings from "@/components/facility/LogoThemeSettings";
 import PreviewCard from "@/components/facility/PreviewCard";
-import { saveToLocalStorage, loadFromLocalStorage } from "@/utils/storageUtils";
+import { 
+  saveFacilityData, 
+  loadFacilityData, 
+  saveFacilityLogo, 
+  loadFacilityLogo 
+} from "@/utils/storageUtils";
 
 const FacilitySettings = () => {
   const { user } = useAuth();
@@ -31,19 +36,24 @@ const FacilitySettings = () => {
 
   // 시설 정보 로드
   useEffect(() => {
-    const savedData = loadFromLocalStorage('facilityData');
-    const savedLogo = loadFromLocalStorage('facilityLogo');
-    
-    if (savedData) {
-      console.log("FacilitySettings: 저장된 데이터 로드", savedData);
-      setFacilityData({...facilityData, ...savedData});
+    if (user?.facilityId) {
+      // 로그인한 사용자의 시설 ID가 있는 경우
+      const customUrl = facilityData.customUrl; // 여기서는 기본값을 사용
+      
+      const savedData = loadFacilityData(customUrl);
+      const savedLogo = loadFacilityLogo(customUrl);
+      
+      if (savedData) {
+        console.log("FacilitySettings: 저장된 데이터 로드", savedData);
+        setFacilityData({...facilityData, ...savedData});
+      }
+      
+      if (savedLogo) {
+        console.log("FacilitySettings: 저장된 로고 로드");
+        setLogoPreview(savedLogo);
+      }
     }
-    
-    if (savedLogo) {
-      console.log("FacilitySettings: 저장된 로고 로드");
-      setLogoPreview(savedLogo);
-    }
-  }, []);
+  }, [user]);
 
   // 만약 시설 관리자가 아니라면 대시보드로 리디렉션
   useEffect(() => {
@@ -69,7 +79,7 @@ const FacilitySettings = () => {
         setLogoPreview(result);
         
         // 로고 변경 즉시 로컬 스토리지에 저장하여 미리보기에 바로 반영
-        saveToLocalStorage('facilityLogo', result);
+        saveFacilityLogo(facilityData.customUrl, result);
         
         toast({
           title: "로고 변경 완료",
@@ -87,12 +97,12 @@ const FacilitySettings = () => {
       setIsLoading(true);
       console.log("FacilitySettings: 데이터 저장 시작", facilityData);
       
-      // 로컬 스토리지에 데이터 저장
-      saveToLocalStorage('facilityData', facilityData);
+      // 시설별 데이터 저장
+      saveFacilityData(facilityData.customUrl, facilityData);
       
       // 로고도 저장 (이미 handleLogoChange에서 저장했지만 확실히 하기 위해)
       if (logoPreview) {
-        saveToLocalStorage('facilityLogo', logoPreview);
+        saveFacilityLogo(facilityData.customUrl, logoPreview);
       }
       
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -115,14 +125,14 @@ const FacilitySettings = () => {
 
   const applyTheme = () => {
     // 색상 테마만 저장
-    const currentData = loadFromLocalStorage('facilityData', {});
+    const currentData = loadFacilityData(facilityData.customUrl, {});
     const updatedData = {
       ...currentData,
       primaryColor: facilityData.primaryColor,
       secondaryColor: facilityData.secondaryColor
     };
     
-    saveToLocalStorage('facilityData', updatedData);
+    saveFacilityData(facilityData.customUrl, updatedData);
     
     toast({
       title: "색상 테마 적용됨",
@@ -132,9 +142,9 @@ const FacilitySettings = () => {
 
   const handlePreview = () => {
     // 현재 상태를 로컬 스토리지에 저장하고 미리보기 페이지로 이동
-    saveToLocalStorage('facilityData', facilityData);
+    saveFacilityData(facilityData.customUrl, facilityData);
     if (logoPreview) {
-      saveToLocalStorage('facilityLogo', logoPreview);
+      saveFacilityLogo(facilityData.customUrl, logoPreview);
     }
     
     // 새 창에서 미리보기 페이지 열기

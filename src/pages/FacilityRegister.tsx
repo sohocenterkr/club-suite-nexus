@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { Facility, CustomField } from "@/types";
+import { loadFacilityData, saveFacilityMember } from "@/utils/storageUtils";
 
 const FacilityRegister = () => {
   const { facilityUrl } = useParams<{ facilityUrl: string }>();
@@ -29,50 +30,45 @@ const FacilityRegister = () => {
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, string>>({});
   
   useEffect(() => {
-    // 실제로는 API에서 시설 정보 가져오기
-    // 지금은 목업 데이터로 대체
+    // 시설 정보 로드
     const fetchFacility = () => {
-      // 목업 시설 데이터
-      const mockFacilities: Facility[] = [
-        {
-          id: "facility-1",
-          name: "헬스플러스 피트니스",
-          logo: null,
-          customUrl: "health-plus",
-          theme: { primaryColor: "#4f46e5", secondaryColor: "#818cf8" },
-          ownerId: "admin-1",
-          customRegistrationFields: [
-            { id: "field-1", facilityId: "facility-1", name: "생년월일", type: "date", required: true },
-            { id: "field-2", facilityId: "facility-1", name: "직업", type: "text", required: false },
-            { id: "field-3", facilityId: "facility-1", name: "운동 목적", type: "select", required: true, options: ["다이어트", "근력 향상", "건강 관리", "기타"] }
-          ]
-        },
-        {
-          id: "facility-2",
-          name: "우먼스 요가 스튜디오",
-          logo: null,
-          customUrl: "womens-yoga",
-          theme: { primaryColor: "#d946ef", secondaryColor: "#f0abfc" },
-          ownerId: "admin-2",
-          customRegistrationFields: [
-            { id: "field-4", facilityId: "facility-2", name: "요가 경험", type: "select", required: true, options: ["초보자", "중급자", "상급자"] },
-            { id: "field-5", facilityId: "facility-2", name: "알레르기", type: "text", required: false }
-          ]
-        }
-      ];
+      if (!facilityUrl) {
+        navigate("/register");
+        return;
+      }
 
-      // URL로 시설 찾기
-      const foundFacility = mockFacilities.find(f => f.customUrl === facilityUrl);
+      // 로컬 스토리지에서 시설 정보 로드
+      const facilityData = loadFacilityData(facilityUrl);
       
-      if (foundFacility) {
-        setFacility(foundFacility);
+      if (facilityData) {
+        // 시설 정보를 찾은 경우
+        setFacility({
+          id: facilityData.id || `facility-${facilityUrl}`,
+          name: facilityData.name,
+          logo: null,
+          customUrl: facilityUrl,
+          theme: { 
+            primaryColor: facilityData.primaryColor || "#4f46e5", 
+            secondaryColor: facilityData.secondaryColor || "#818cf8" 
+          },
+          ownerId: facilityData.ownerId || "admin-1",
+          customRegistrationFields: facilityData.customRegistrationFields || [
+            { id: "field-1", facilityId: facilityData.id || "facility-1", name: "생년월일", type: "date", required: true },
+            { id: "field-2", facilityId: facilityData.id || "facility-1", name: "직업", type: "text", required: false },
+            { id: "field-3", facilityId: facilityData.id || "facility-1", name: "운동 목적", type: "select", required: true, options: ["다이어트", "근력 향상", "건강 관리", "기타"] }
+          ]
+        });
+
         // 커스텀 필드의 기본값 설정
         const defaultValues: Record<string, string> = {};
-        foundFacility.customRegistrationFields?.forEach(field => {
-          defaultValues[field.id] = "";
-        });
+        if (facilityData.customRegistrationFields) {
+          facilityData.customRegistrationFields.forEach((field: CustomField) => {
+            defaultValues[field.id] = "";
+          });
+        }
         setCustomFieldValues(defaultValues);
       } else {
+        // 시설을 찾을 수 없는 경우
         toast({
           title: "시설을 찾을 수 없음",
           description: "해당 URL의 시설을 찾을 수 없습니다.",
@@ -150,6 +146,22 @@ const FacilityRegister = () => {
     
     try {
       setLoading(true);
+      
+      if (facilityUrl) {
+        // 시설별 회원 정보 저장
+        const memberId = `member-${Date.now()}`;
+        const memberData = {
+          id: memberId,
+          name,
+          phone,
+          role: "member",
+          customFields: customFieldValues,
+          registeredAt: new Date().toISOString(),
+        };
+
+        // 시설별 회원 정보 로컬 스토리지에 저장
+        saveFacilityMember(facilityUrl, memberId, memberData);
+      }
       
       // 회원가입 처리
       await register(name, phone, "member", facility?.id || null, undefined, customFieldValues);

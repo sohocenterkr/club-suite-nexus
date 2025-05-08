@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
+import { saveToLocalStorage } from "@/utils/storageUtils";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -13,6 +14,7 @@ const Register = () => {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [facilityName, setFacilityName] = useState("");
+  const [facilitySubdomain, setFacilitySubdomain] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -28,13 +30,66 @@ const Register = () => {
       return;
     }
     
+    // 시설 관리자 등록 시 서브도메인 필수 확인
+    if (isAdmin) {
+      if (!facilityName.trim()) {
+        toast({
+          title: "입력 오류",
+          description: "시설 이름을 입력해주세요.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      if (!facilitySubdomain.trim()) {
+        toast({
+          title: "입력 오류",
+          description: "시설 서브주소를 입력해주세요.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // 서브도메인 유효성 검사 (영문, 숫자, 하이픈만 허용)
+      const subdomainPattern = /^[a-z0-9-]+$/;
+      if (!subdomainPattern.test(facilitySubdomain)) {
+        toast({
+          title: "서브주소 형식 오류",
+          description: "서브주소는 영문 소문자, 숫자, 하이픈(-)만 사용할 수 있습니다.",
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+    
     try {
       setIsLoading(true);
+      
+      if (isAdmin) {
+        // 시설 정보 저장 (실제로는 DB에 저장하지만 지금은 로컬 스토리지 활용)
+        const facilityData = {
+          id: `facility-${Date.now()}`,
+          name: facilityName,
+          customUrl: facilitySubdomain,
+          description: "",
+          address: "",
+          phone: "",
+          primaryColor: "#3b82f6",
+          secondaryColor: "#60a5fa",
+          operatingHours: ""
+        };
+        
+        // 시설별 데이터 저장
+        saveToLocalStorage(`facility_${facilitySubdomain}_data`, facilityData);
+      }
+      
       await register(name, phone, isAdmin ? "admin" : "member");
+      
       toast({
         title: "회원가입 완료",
         description: isAdmin ? "시설 관리자로 회원가입이 완료되었습니다." : "회원가입이 완료되었습니다."
       });
+      
       navigate(isAdmin ? "/settings/facility" : "/dashboard");
     } catch (error) {
       toast({
@@ -64,6 +119,12 @@ const Register = () => {
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatPhoneNumber(e.target.value);
     setPhone(formatted);
+  };
+
+  const handleSubdomainChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // 영문 소문자, 숫자, 하이픈만 허용
+    const value = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
+    setFacilitySubdomain(value);
   };
 
   return (
@@ -127,18 +188,41 @@ const Register = () => {
                 />
               </div>
               {isAdmin && (
-                <div className="space-y-2">
-                  <label htmlFor="facilityName" className="block text-sm font-medium">
-                    시설 이름
-                  </label>
-                  <Input
-                    id="facilityName"
-                    value={facilityName}
-                    onChange={(e) => setFacilityName(e.target.value)}
-                    placeholder="시설 이름을 입력해주세요"
-                    required={isAdmin}
-                  />
-                </div>
+                <>
+                  <div className="space-y-2">
+                    <label htmlFor="facilityName" className="block text-sm font-medium">
+                      시설 이름
+                    </label>
+                    <Input
+                      id="facilityName"
+                      value={facilityName}
+                      onChange={(e) => setFacilityName(e.target.value)}
+                      placeholder="시설 이름을 입력해주세요"
+                      required={isAdmin}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label htmlFor="facilitySubdomain" className="block text-sm font-medium">
+                      시설 서브주소
+                    </label>
+                    <div className="flex items-center">
+                      <span className="bg-muted px-3 py-2 text-sm border border-r-0 rounded-l-md">
+                        facilityhub.com/f/
+                      </span>
+                      <Input
+                        id="facilitySubdomain"
+                        value={facilitySubdomain}
+                        onChange={handleSubdomainChange}
+                        className="rounded-l-none"
+                        placeholder="your-facility"
+                        required={isAdmin}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      영문 소문자, 숫자, 하이픈(-)만 사용할 수 있습니다.
+                    </p>
+                  </div>
+                </>
               )}
               <Button
                 type="submit"
