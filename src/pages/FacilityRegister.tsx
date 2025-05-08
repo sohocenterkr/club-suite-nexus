@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -53,9 +52,7 @@ const FacilityRegister = () => {
           },
           ownerId: facilityData.ownerId || "admin-1",
           customRegistrationFields: facilityData.customRegistrationFields || [
-            { id: "field-1", facilityId: facilityData.id || "facility-1", name: "생년월일", type: "date", required: true },
-            { id: "field-2", facilityId: facilityData.id || "facility-1", name: "직업", type: "text", required: false },
-            { id: "field-3", facilityId: facilityData.id || "facility-1", name: "운동 목적", type: "select", required: true, options: ["다이어트", "근력 향상", "건강 관리", "기타"] }
+            { id: "field-1", facilityId: facilityData.id || "facility-1", name: "생년월일", type: "date", required: true }
           ]
         });
 
@@ -155,6 +152,7 @@ const FacilityRegister = () => {
           name,
           phone,
           role: "member",
+          facilityId: `facility-${facilityUrl}`, // 해당 시설의 ID 저장
           customFields: customFieldValues,
           registeredAt: new Date().toISOString(),
         };
@@ -164,7 +162,7 @@ const FacilityRegister = () => {
       }
       
       // 회원가입 처리
-      await register(name, phone, "member", facility?.id || null, undefined, customFieldValues);
+      await register(name, phone, "member", `facility-${facilityUrl}`, undefined, customFieldValues);
       
       toast({
         title: "회원가입 성공",

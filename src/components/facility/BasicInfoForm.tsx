@@ -25,7 +25,7 @@ const BasicInfoForm = ({
   isLoading, 
   onSubmit, 
   onChange,
-  hideCustomUrl = false 
+  hideCustomUrl = true // 기본값을 true로 변경하여 숨김 상태로 시작
 }: BasicInfoFormProps) => {
   return (
     <Card>

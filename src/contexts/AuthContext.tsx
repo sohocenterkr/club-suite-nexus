@@ -1,6 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { User } from "@/types";
+import { loadFacilityData } from "@/utils/storageUtils";
 
 interface AuthContextType {
   user: User | null;

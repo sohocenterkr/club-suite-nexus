@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 import { CustomField, Facility } from "@/types";
 import { Edit, Plus, Save, Trash, AlertCircle } from "lucide-react";
+import { loadFacilityData, saveFacilityData } from "@/utils/storageUtils";
 
 // Select 옵션 필드 컴포넌트
 const OptionsField = ({ options, setOptions }: { options: string[], setOptions: React.Dispatch<React.SetStateAction<string[]>> }) => {
@@ -78,27 +78,50 @@ const CustomFieldsManagement = () => {
   const [fieldOptions, setFieldOptions] = useState<string[]>([]);
   const [currentField, setCurrentField] = useState<CustomField | null>(null);
 
-  // 예제 데이터 로드
+  // 시설 데이터 로드
   useEffect(() => {
-    // 실제로는 API에서 시설 정보와 커스텀 필드를 가져옴
+    // 사용자가 시설 관리자인지 확인
     if (user?.facilityId) {
-      // 목업 데이터
-      const mockFacility: Facility = {
-        id: "facility-1",
-        name: "헬스플러스 피트니스",
-        logo: null,
-        customUrl: "health-plus",
-        theme: { primaryColor: "#4f46e5", secondaryColor: "#818cf8" },
-        ownerId: user.id,
-        customRegistrationFields: [
-          { id: "field-1", facilityId: "facility-1", name: "생년월일", type: "date", required: true },
-          { id: "field-2", facilityId: "facility-1", name: "직업", type: "text", required: false },
-          { id: "field-3", facilityId: "facility-1", name: "운동 목적", type: "select", required: true, options: ["다이어트", "근력 향상", "건강 관리", "기타"] }
-        ]
-      };
+      const customUrl = user.facilityId.replace('facility-', '');
       
-      setFacility(mockFacility);
-      setCustomFields(mockFacility.customRegistrationFields || []);
+      // 로컬 스토리지에서 시설 정보 불러오기
+      const facilityData = loadFacilityData(customUrl, {});
+      
+      if (facilityData) {
+        const facilityObj: Facility = {
+          id: user.facilityId,
+          name: facilityData.name || "기본 시설 이름",
+          logo: null,
+          customUrl: customUrl,
+          theme: { 
+            primaryColor: facilityData.primaryColor || "#4f46e5", 
+            secondaryColor: facilityData.secondaryColor || "#818cf8" 
+          },
+          ownerId: user.id,
+          customRegistrationFields: facilityData.customRegistrationFields || [
+            { id: "field-1", facilityId: user.facilityId, name: "생년월일", type: "date", required: true }
+          ]
+        };
+        
+        setFacility(facilityObj);
+        setCustomFields(facilityObj.customRegistrationFields || []);
+      } else {
+        // 기본 데이터 설정
+        const defaultFacility: Facility = {
+          id: user.facilityId,
+          name: "기본 시설 이름",
+          logo: null,
+          customUrl: customUrl,
+          theme: { primaryColor: "#4f46e5", secondaryColor: "#818cf8" },
+          ownerId: user.id,
+          customRegistrationFields: [
+            { id: "field-1", facilityId: user.facilityId, name: "생년월일", type: "date", required: true }
+          ]
+        };
+        
+        setFacility(defaultFacility);
+        setCustomFields(defaultFacility.customRegistrationFields || []);
+      }
     } else {
       navigate("/dashboard");
     }
@@ -229,15 +252,16 @@ const CustomFieldsManagement = () => {
 
   // 변경사항 저장
   const saveChanges = () => {
-    // 실제로는 API 호출로 서버에 저장
-    // 여기서는 로컬 스토리지에 저장
-    if (facility) {
+    if (facility && user?.facilityId) {
+      const customUrl = user.facilityId.replace('facility-', '');
+      const currentData = loadFacilityData(customUrl, {});
+      
       const updatedFacility = {
-        ...facility,
+        ...currentData,
         customRegistrationFields: customFields
       };
       
-      localStorage.setItem(`facility_${facility.id}`, JSON.stringify(updatedFacility));
+      saveFacilityData(customUrl, updatedFacility);
       
       toast({
         title: "설정 저장 완료",
