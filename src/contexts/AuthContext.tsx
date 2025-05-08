@@ -57,8 +57,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
       
-      // 실제 구현에서는 API 호출로 대체
-      // 테스트용 목 데이터
+      // 로컬 스토리지에서 사용자 찾기
+      // 실제 구현에서는 API 호출로 대체되어야 함
+      const mockUsers = JSON.parse(localStorage.getItem("mockUsers") || "[]");
+      const foundUser = mockUsers.find((u: any) => u.phone === phone);
+      
+      if (foundUser) {
+        localStorage.setItem("user", JSON.stringify(foundUser));
+        setUser(foundUser);
+        return;
+      }
+      
+      // 사용자가 없으면 테스트 사용자로 로그인
       const mockUser: User = {
         id: "user-1",
         name: "테스트 사용자",
@@ -94,19 +104,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (phone === "010-892-0396" || email === "sohocenter.kr@gmail.com") {
         role = "superadmin";
       }
+
+      const newUserId = `user-${Date.now()}`;
+      let newFacilityId = facilityId;
+      
+      // 시설 관리자인 경우 facility ID 생성
+      if (role === "admin" && !facilityId) {
+        // Register 컴포넌트에서 나중에 쓰도록 customUrl을 facilityId의 suffix로 저장
+        newFacilityId = `facility-${facilityId || Date.now()}`;
+      }
       
       // 실제 구현에서는 API 호출로 대체
       // 테스트용 목 데이터
       const mockUser: User = {
-        id: `user-${Date.now()}`,
+        id: newUserId,
         name,
         phone,
         role,
-        facilityId: role === "admin" ? `facility-${Date.now()}` : facilityId,
+        facilityId: newFacilityId,
         customFields
       };
       
-      // 로컬 스토리지에 사용자 정보 저장
+      // 로컬 스토리지에 사용자 목록 업데이트
+      const mockUsers = JSON.parse(localStorage.getItem("mockUsers") || "[]");
+      mockUsers.push(mockUser);
+      localStorage.setItem("mockUsers", JSON.stringify(mockUsers));
+      
+      // 로컬 스토리지에 사용자 정보 저장 (현재 로그인된 사용자)
       localStorage.setItem("user", JSON.stringify(mockUser));
       setUser(mockUser);
     } catch (error) {
@@ -133,4 +157,3 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
-

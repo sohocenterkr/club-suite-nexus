@@ -17,9 +17,16 @@ interface BasicInfoFormProps {
   isLoading: boolean;
   onSubmit: (e: React.FormEvent) => void;
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  hideCustomUrl?: boolean; // 커스텀 URL 숨김 여부 (선택적)
 }
 
-const BasicInfoForm = ({ facilityData, isLoading, onSubmit, onChange }: BasicInfoFormProps) => {
+const BasicInfoForm = ({ 
+  facilityData, 
+  isLoading, 
+  onSubmit, 
+  onChange,
+  hideCustomUrl = false 
+}: BasicInfoFormProps) => {
   return (
     <Card>
       <CardHeader>
@@ -44,25 +51,27 @@ const BasicInfoForm = ({ facilityData, isLoading, onSubmit, onChange }: BasicInf
                 required
               />
             </div>
-            <div className="space-y-2">
-              <label htmlFor="customUrl" className="block text-sm font-medium">
-                커스텀 URL
-              </label>
-              <div className="flex items-center">
-                <span className="bg-muted px-3 py-2 text-sm border border-r-0 rounded-l-md">
-                  facilityhub.com/f/
-                </span>
-                <Input
-                  id="customUrl"
-                  name="customUrl"
-                  value={facilityData.customUrl}
-                  onChange={onChange}
-                  className="rounded-l-none"
-                  placeholder="your-facility"
-                  required
-                />
+            {!hideCustomUrl && (
+              <div className="space-y-2">
+                <label htmlFor="customUrl" className="block text-sm font-medium">
+                  커스텀 URL
+                </label>
+                <div className="flex items-center">
+                  <span className="bg-muted px-3 py-2 text-sm border border-r-0 rounded-l-md">
+                    facilityhub.com/f/
+                  </span>
+                  <Input
+                    id="customUrl"
+                    name="customUrl"
+                    value={facilityData.customUrl}
+                    onChange={onChange}
+                    className="rounded-l-none"
+                    placeholder="your-facility"
+                    required
+                  />
+                </div>
               </div>
-            </div>
+            )}
           </div>
           
           <div className="space-y-2">

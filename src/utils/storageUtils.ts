@@ -36,27 +36,62 @@ export const loadFromLocalStorage = (key: string, defaultValue: any = null) => {
 
 // 시설별 데이터 저장 유틸리티
 export const saveFacilityData = (facilityUrl: string, data: any) => {
-  saveToLocalStorage(`facility_${facilityUrl}_data`, data);
+  if (!facilityUrl) {
+    console.error("facilityUrl이 제공되지 않았습니다.");
+    return;
+  }
+  
+  // 'facility-' 접두사가 있는 경우 제거
+  const cleanUrl = facilityUrl.replace(/^facility-/, '');
+  saveToLocalStorage(`facility_${cleanUrl}_data`, data);
 };
 
 // 시설별 데이터 로드 유틸리티
 export const loadFacilityData = (facilityUrl: string, defaultValue: any = null) => {
-  return loadFromLocalStorage(`facility_${facilityUrl}_data`, defaultValue);
+  if (!facilityUrl) {
+    console.error("facilityUrl이 제공되지 않았습니다.");
+    return defaultValue;
+  }
+  
+  // 'facility-' 접두사가 있는 경우 제거
+  const cleanUrl = facilityUrl.replace(/^facility-/, '');
+  return loadFromLocalStorage(`facility_${cleanUrl}_data`, defaultValue);
 };
 
 // 시설별 로고 저장 유틸리티
 export const saveFacilityLogo = (facilityUrl: string, logoData: string) => {
-  saveToLocalStorage(`facility_${facilityUrl}_logo`, logoData);
+  if (!facilityUrl) {
+    console.error("facilityUrl이 제공되지 않았습니다.");
+    return;
+  }
+  
+  // 'facility-' 접두사가 있는 경우 제거
+  const cleanUrl = facilityUrl.replace(/^facility-/, '');
+  saveToLocalStorage(`facility_${cleanUrl}_logo`, logoData);
 };
 
 // 시설별 로고 로드 유틸리티
 export const loadFacilityLogo = (facilityUrl: string) => {
-  return loadFromLocalStorage(`facility_${facilityUrl}_logo`, null);
+  if (!facilityUrl) {
+    console.error("facilityUrl이 제공되지 않았습니다.");
+    return null;
+  }
+  
+  // 'facility-' 접두사가 있는 경우 제거
+  const cleanUrl = facilityUrl.replace(/^facility-/, '');
+  return loadFromLocalStorage(`facility_${cleanUrl}_logo`, null);
 };
 
 // 시설별 회원 데이터 저장 유틸리티
 export const saveFacilityMember = (facilityUrl: string, memberId: string, memberData: any) => {
-  const memberList = loadFacilityMembers(facilityUrl, []);
+  if (!facilityUrl) {
+    console.error("facilityUrl이 제공되지 않았습니다.");
+    return;
+  }
+  
+  // 'facility-' 접두사가 있는 경우 제거
+  const cleanUrl = facilityUrl.replace(/^facility-/, '');
+  const memberList = loadFacilityMembers(cleanUrl, []);
   const existingIndex = memberList.findIndex((m: any) => m.id === memberId);
   
   if (existingIndex >= 0) {
@@ -65,11 +100,18 @@ export const saveFacilityMember = (facilityUrl: string, memberId: string, member
     memberList.push({ id: memberId, ...memberData });
   }
   
-  saveToLocalStorage(`facility_${facilityUrl}_members`, memberList);
+  saveToLocalStorage(`facility_${cleanUrl}_members`, memberList);
   return memberList;
 };
 
 // 시설별 회원 목록 로드 유틸리티
 export const loadFacilityMembers = (facilityUrl: string, defaultValue: any[] = []) => {
-  return loadFromLocalStorage(`facility_${facilityUrl}_members`, defaultValue);
+  if (!facilityUrl) {
+    console.error("facilityUrl이 제공되지 않았습니다.");
+    return defaultValue;
+  }
+  
+  // 'facility-' 접두사가 있는 경우 제거
+  const cleanUrl = facilityUrl.replace(/^facility-/, '');
+  return loadFromLocalStorage(`facility_${cleanUrl}_members`, defaultValue);
 };

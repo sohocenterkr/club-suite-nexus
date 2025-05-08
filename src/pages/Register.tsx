@@ -66,9 +66,9 @@ const Register = () => {
       setIsLoading(true);
       
       if (isAdmin) {
-        // 시설 정보 저장 (실제로는 DB에 저장하지만 지금은 로컬 스토리지 활용)
+        // 시설 정보 저장
         const facilityData = {
-          id: `facility-${Date.now()}`,
+          id: `facility-${facilitySubdomain}`,
           name: facilityName,
           customUrl: facilitySubdomain,
           description: "",
@@ -79,11 +79,15 @@ const Register = () => {
           operatingHours: ""
         };
         
+        // facilitySubdomain을 facilityId로 사용하여 등록
+        await register(name, phone, isAdmin ? "admin" : "member", facilitySubdomain);
+        
         // 시설별 데이터 저장
         saveToLocalStorage(`facility_${facilitySubdomain}_data`, facilityData);
+      } else {
+        // 일반 회원 가입
+        await register(name, phone, "member");
       }
-      
-      await register(name, phone, isAdmin ? "admin" : "member");
       
       toast({
         title: "회원가입 완료",

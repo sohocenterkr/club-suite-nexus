@@ -21,7 +21,7 @@ const FacilitySettings = () => {
   // 시설 정보 상태 관리
   const [facilityData, setFacilityData] = useState({
     name: "헬스플러스 피트니스",
-    customUrl: "health-plus",
+    customUrl: "",  // 사용자 등록시 설정된 URL을 사용할 것이므로 비움
     description: "최고의 시설과 장비를 갖춘 프리미엄 헬스장입니다.",
     address: "서울시 강남구 역삼동 123-45",
     phone: "02-1234-5678",
@@ -34,18 +34,34 @@ const FacilitySettings = () => {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
-  // 시설 정보 로드
+  // 시설 정보 및 커스텀 URL 로드
   useEffect(() => {
     if (user?.facilityId) {
       // 로그인한 사용자의 시설 ID가 있는 경우
-      const customUrl = facilityData.customUrl; // 여기서는 기본값을 사용
+      const customUrl = user.facilityId.replace('facility-', '');
+      
+      // 기존 상태를 업데이트하여 customUrl 설정
+      setFacilityData(prevData => ({
+        ...prevData,
+        customUrl: customUrl
+      }));
       
       const savedData = loadFacilityData(customUrl);
       const savedLogo = loadFacilityLogo(customUrl);
       
       if (savedData) {
         console.log("FacilitySettings: 저장된 데이터 로드", savedData);
-        setFacilityData({...facilityData, ...savedData});
+        setFacilityData(prev => ({
+          ...prev,
+          name: savedData.name || prev.name,
+          description: savedData.description || prev.description,
+          address: savedData.address || prev.address,
+          phone: savedData.phone || prev.phone,
+          primaryColor: savedData.primaryColor || prev.primaryColor,
+          secondaryColor: savedData.secondaryColor || prev.secondaryColor,
+          operatingHours: savedData.operatingHours || prev.operatingHours,
+          customUrl: customUrl // 항상 사용자의 facilityId에서 추출한 값 사용
+        }));
       }
       
       if (savedLogo) {
@@ -163,6 +179,7 @@ const FacilitySettings = () => {
               isLoading={isLoading}
               onSubmit={handleSubmit}
               onChange={handleChange}
+              hideCustomUrl={true} // 커스텀 URL 숨김 옵션 추가
             />
           </div>
           
